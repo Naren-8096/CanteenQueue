@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login – CanteenQueue</title>
+  <meta name="description" content="Login to your CanteenQueue account"/>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body class="hero-bg">
+  <div class="loading-overlay hidden" id="loading-overlay">
+    <div class="loading-box"><div class="spinner"></div><p>Logging in…</p></div>
+  </div>
+
+  <div class="auth-page">
+    <div class="card auth-card animate-fade-up">
+      <div class="auth-logo">
+        <a href="/" style="text-decoration:none;color:var(--text)"><h1>🍽️ Canteen<span style="color:var(--primary)">Queue</span></h1></a>
+        <p style="margin-top:.5rem">Welcome back! Sign in to your account.</p>
+      </div>
+
+      <form id="loginForm">
+        <div style="display:flex;flex-direction:column;gap:1.25rem">
+          <div class="input-group">
+            <label for="email">Email Address</label>
+            <input id="email" type="email" class="input" placeholder="you@college.edu" autocomplete="email" required/>
+          </div>
+          <div class="input-group">
+            <label for="password">Password</label>
+            <input id="password" type="password" class="input" placeholder="••••••••" autocomplete="current-password" required/>
+          </div>
+          <div id="errorMsg" class="error-msg hidden"></div>
+          <button type="submit" class="btn btn-primary btn-full btn-lg" id="loginBtn">Sign In</button>
+        </div>
+      </form>
+
+      <div class="auth-divider">— OR —</div>
+      <p class="text-center" style="font-size:.9rem">Don't have an account? <a href="register.html" style="color:var(--primary); font-weight:600">Register here</a></p>
+      <p class="text-center mt-2" style="font-size:.875rem"><a href="/" style="color:var(--text-muted)">← Back to Home</a></p>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    redirectIfLoggedIn();
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const errMsg   = document.getElementById('errorMsg');
+      const btn      = document.getElementById('loginBtn');
+
+      errMsg.classList.add('hidden');
+      btn.disabled = true;
+      btn.textContent = 'Signing in…';
+      showLoading();
+
+      try {
+        const res = await api.post('/auth/login', { email, password });
+        saveAuth(res.token, res.user);
+        toast('Login successful! Redirecting…', 'success');
+        setTimeout(() => {
+          window.location.href = res.user.role === 'staff' ? '/staff-dashboard.html' : '/student-dashboard.html';
+        }, 500);
+      } catch (err) {
+        errMsg.textContent = err.message;
+        errMsg.classList.remove('hidden');
+        hideLoading();
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
+    });
+  </script>
+</body>
+</html>

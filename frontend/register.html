@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register – CanteenQueue</title>
+  <meta name="description" content="Create your CanteenQueue account"/>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body class="hero-bg">
+  <div class="loading-overlay hidden" id="loading-overlay">
+    <div class="loading-box"><div class="spinner"></div><p>Creating account…</p></div>
+  </div>
+
+  <div class="auth-page">
+    <div class="card auth-card animate-fade-up">
+      <div class="auth-logo">
+        <a href="/" style="text-decoration:none;color:var(--text)"><h1>🍽️ Canteen<span style="color:var(--primary)">Queue</span></h1></a>
+        <p style="margin-top:.5rem">Create your account to start ordering.</p>
+      </div>
+
+      <!-- ROLE SELECTION -->
+      <div id="roleSelection">
+        <h3 class="text-center mb-3">I am a…</h3>
+        <div class="grid-2" style="gap:1rem">
+          <button class="card" style="cursor:pointer;text-align:center;border:2px solid var(--border);transition:var(--transition)" id="roleStudent" onclick="selectRole('student')">
+            <div style="font-size:2.5rem">🎓</div>
+            <h3>Student</h3>
+            <p style="font-size:.85rem">Order food from the canteen</p>
+          </button>
+          <button class="card" style="cursor:pointer;text-align:center;border:2px solid var(--border);transition:var(--transition)" id="roleStaff" onclick="selectRole('staff')">
+            <div style="font-size:2.5rem">👨‍🍳</div>
+            <h3>Staff</h3>
+            <p style="font-size:.85rem">Manage orders & queue</p>
+          </button>
+        </div>
+      </div>
+
+      <!-- REGISTER FORM (hidden until role selected) -->
+      <form id="registerForm" class="hidden" style="margin-top:1.5rem">
+        <div id="selectedRoleBadge" style="text-align:center;margin-bottom:1.25rem"></div>
+        <div style="display:flex;flex-direction:column;gap:1.25rem">
+          <div class="input-group">
+            <label for="name">Full Name</label>
+            <input id="name" type="text" class="input" placeholder="John Doe" required/>
+          </div>
+          <div class="input-group">
+            <label for="email">Email Address</label>
+            <input id="email" type="email" class="input" placeholder="you@college.edu" required/>
+          </div>
+          <div class="input-group">
+            <label for="phone">Phone Number</label>
+            <input id="phone" type="tel" class="input" placeholder="9876543210"/>
+          </div>
+          <div class="input-group">
+            <label for="password">Password</label>
+            <input id="password" type="password" class="input" placeholder="Min. 6 characters" required/>
+          </div>
+          <input type="hidden" id="role"/>
+          <div id="errorMsg" class="error-msg hidden"></div>
+          <button type="submit" class="btn btn-primary btn-full btn-lg" id="registerBtn">Create Account</button>
+          <button type="button" class="btn btn-ghost btn-full" onclick="backToRole()">← Change Role</button>
+        </div>
+      </form>
+
+      <div class="auth-divider mt-3">— OR —</div>
+      <p class="text-center" style="font-size:.9rem">Already have an account? <a href="login.html" style="color:var(--primary);font-weight:600">Login here</a></p>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    redirectIfLoggedIn();
+
+    let selectedRole = null;
+    const selectRole = (role) => {
+      selectedRole = role;
+      document.getElementById('role').value = role;
+      document.getElementById('roleSelection').classList.add('hidden');
+      document.getElementById('registerForm').classList.remove('hidden');
+      document.getElementById('selectedRoleBadge').innerHTML =
+        `<span class="badge badge-primary">${role === 'staff' ? '👨‍🍳 Staff' : '🎓 Student'}</span>`;
+      // Highlight selected card
+      document.getElementById(`role${role.charAt(0).toUpperCase()+role.slice(1)}`).style.borderColor = 'var(--primary)';
+    };
+    const backToRole = () => {
+      document.getElementById('roleSelection').classList.remove('hidden');
+      document.getElementById('registerForm').classList.add('hidden');
+    };
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name     = document.getElementById('name').value.trim();
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const phone    = document.getElementById('phone').value.trim();
+      const role     = document.getElementById('role').value;
+      const errMsg   = document.getElementById('errorMsg');
+      const btn      = document.getElementById('registerBtn');
+
+      errMsg.classList.add('hidden');
+      btn.disabled = true;
+      btn.textContent = 'Creating Account…';
+      showLoading();
+
+      try {
+        const res = await api.post('/auth/register', { name, email, password, phone, role });
+        saveAuth(res.token, res.user);
+        toast('Account created successfully!', 'success');
+        setTimeout(() => {
+          window.location.href = res.user.role === 'staff' ? '/staff-dashboard.html' : '/student-dashboard.html';
+        }, 600);
+      } catch (err) {
+        errMsg.textContent = err.message;
+        errMsg.classList.remove('hidden');
+        hideLoading();
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    });
+  </script>
+</body>
+</html>

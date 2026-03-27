@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CanteenQueue – Smart College Canteen Ordering</title>
+  <meta name="description" content="Skip the line. Order food from your college canteen online, pay instantly, and pick up when your token is called."/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .hero { min-height: 100vh; display:flex; flex-direction:column; }
+    .hero-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:4rem 2rem; gap:2rem; }
+    .hero-tag { display:inline-flex; align-items:center; gap:.5rem; background:rgba(14,165,233,0.1); border:1px solid rgba(14,165,233,0.3); border-radius:99px; padding:.35rem 1rem; font-size:.85rem; font-weight:600; color:var(--primary); margin-bottom:1rem; }
+    .hero h1 { max-width: 700px; }
+    .hero-btns { display:flex; gap:1rem; flex-wrap:wrap; justify-content:center; }
+    .features { padding: 5rem 2rem; max-width:1200px; margin:0 auto; }
+    .feature-card { text-align:center; padding:2rem 1.5rem; }
+    .feature-icon { font-size:2.5rem; margin-bottom:1rem; }
+    .flow { padding:4rem 2rem; background:var(--bg-surface); }
+    .flow-inner { max-width:900px; margin:0 auto; text-align:center; }
+    .flow-steps { display:flex; flex-wrap:wrap; justify-content:center; gap:1.5rem; margin-top:2.5rem; }
+    .flow-step { display:flex; flex-direction:column; align-items:center; gap:.5rem; width:120px; }
+    .flow-step-icon { width:60px; height:60px; border-radius:50%; background:var(--glass); border:2px solid var(--border-bright); display:flex; align-items:center; justify-content:center; font-size:1.5rem; }
+    .flow-step p { font-size:.8rem; text-align:center; }
+    .footer { text-align:center; padding:2rem; color:var(--text-dim); font-size:.875rem; border-top:1px solid var(--border); }
+    .hero-blob { position:absolute; pointer-events:none; opacity:.4; filter:blur(80px); border-radius:50%; }
+    .blob1 { width:500px; height:500px; background:radial-gradient(circle, rgba(14,165,233,0.3) 0%, transparent 70%); top:-100px; left:-100px; }
+    .blob2 { width:400px; height:400px; background:radial-gradient(circle, rgba(249,115,22,0.2) 0%, transparent 70%); bottom:0px; right:-50px; }
+    .hero-wrapper { position:relative; overflow:hidden; }
+  </style>
+</head>
+<body class="hero-bg">
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="/" class="navbar-brand">🍽️ Canteen<span>Queue</span></a>
+    <div class="navbar-nav">
+      <a href="#features" class="nav-link">Features</a>
+      <a href="#flow" class="nav-link">How it Works</a>
+      <a href="login.html" class="btn btn-outline btn-sm">Login</a>
+      <a href="register.html" class="btn btn-primary btn-sm">Get Started</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero hero-wrapper">
+    <div class="hero-blob blob1"></div>
+    <div class="hero-blob blob2"></div>
+    <div class="hero-content animate-fade-up">
+      <div class="hero-tag">🚀 Digital Canteen System</div>
+      <h1>Skip the Queue.<br/><span class="gradient-text">Order Smart.</span></h1>
+      <p style="max-width:540px; font-size:1.1rem; color:var(--text-muted);">Order food from your college canteen online, pay with Razorpay, get a token & OTP — and collect when it's ready. No waiting in line.</p>
+      <div class="hero-btns">
+        <a href="register.html" class="btn btn-primary btn-lg">Start Ordering →</a>
+        <a href="login.html" class="btn btn-ghost btn-lg">Staff Login</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features" id="features">
+    <h2 class="text-center mb-3">Everything You Need</h2>
+    <div class="grid-3 mt-4">
+      <div class="card feature-card animate-fade-up">
+        <div class="feature-icon">📱</div>
+        <h3>Online Ordering</h3>
+        <p>Browse the menu, add items to cart, and place orders from anywhere on campus.</p>
+      </div>
+      <div class="card feature-card animate-fade-up" style="animation-delay:.1s">
+        <div class="feature-icon">💳</div>
+        <h3>Instant Payment</h3>
+        <p>Secure payments via Razorpay. Pay once, skip the cash queue at the counter.</p>
+      </div>
+      <div class="card feature-card animate-fade-up" style="animation-delay:.2s">
+        <div class="feature-icon">🎫</div>
+        <h3>Token & OTP System</h3>
+        <p>Get a unique token and 4-digit OTP to verify your identity at the counter.</p>
+      </div>
+      <div class="card feature-card animate-fade-up" style="animation-delay:.3s">
+        <div class="feature-icon">📊</div>
+        <h3>Live Queue Tracking</h3>
+        <p>See your exact position in the queue in real-time without standing in line.</p>
+      </div>
+      <div class="card feature-card animate-fade-up" style="animation-delay:.4s">
+        <div class="feature-icon">👨‍🍳</div>
+        <h3>Staff Dashboard</h3>
+        <p>Staff verify OTPs, manage food preparation status, and track all orders.</p>
+      </div>
+      <div class="card feature-card animate-fade-up" style="animation-delay:.5s">
+        <div class="feature-icon">⚡</div>
+        <h3>Availability Control</h3>
+        <p>Staff can toggle item availability in real-time so students see only what's ready.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="flow" id="flow">
+    <div class="flow-inner">
+      <h2>How It Works</h2>
+      <p class="mt-2">Simple 7 step process from order to delivery</p>
+      <div class="flow-steps">
+        <div class="flow-step"><div class="flow-step-icon">🛒</div><p>Student Orders</p></div>
+        <div class="flow-step"><div class="flow-step-icon">💳</div><p>Payment Verified</p></div>
+        <div class="flow-step"><div class="flow-step-icon">🎫</div><p>Token + OTP</p></div>
+        <div class="flow-step"><div class="flow-step-icon">✅</div><p>OTP Verified</p></div>
+        <div class="flow-step"><div class="flow-step-icon">📋</div><p>Queue Assigned</p></div>
+        <div class="flow-step"><div class="flow-step-icon">🍳</div><p>Food Prepared</p></div>
+        <div class="flow-step"><div class="flow-step-icon">🎉</div><p>Delivered</p></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>© 2025 CanteenQueue — Built with ❤️ for college students</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Dashboard – CanteenQueue</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .category-tabs { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1.5rem; }
+    .cat-btn { padding:.4rem 1rem; border-radius:99px; border:1.5px solid var(--border); background:transparent; color:var(--text-muted); font-family:inherit; font-size:.85rem; cursor:pointer; transition:var(--transition); }
+    .cat-btn.active { border-color:var(--primary); background:rgba(14,165,233,0.1); color:var(--primary); font-weight:600; }
+    .cart-total-row { display:flex; justify-content:space-between; font-weight:700; font-size:1.05rem; padding:.75rem 0; border-top:1px solid var(--border); margin-top:.5rem; }
+    #cartEmpty { text-align:center; padding:2rem; color:var(--text-dim); }
+    .user-welcome { font-size:.9rem; color:var(--text-muted); }
+  </style>
+</head>
+<body>
+  <div class="loading-overlay hidden" id="loading-overlay">
+    <div class="loading-box"><div class="spinner"></div><p>Loading…</p></div>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="/" class="navbar-brand">🍽️ Canteen<span>Queue</span></a>
+    <div class="navbar-nav">
+      <div class="user-welcome">👋 Hi, <span id="userName">Student</span></div>
+      <a href="order-confirmation.html" class="btn btn-ghost btn-sm">📋 My Orders</a>
+      <button onclick="logout()" class="btn btn-outline btn-sm">Logout</button>
+    </div>
+  </nav>
+
+  <div class="layout-with-sidebar">
+    <!-- MAIN: MENU -->
+    <div class="main-area">
+      <div class="page-header" style="padding:0 0 1.5rem">
+        <div>
+          <h2>🍽️ Today's Menu</h2>
+          <p>Select items to add to your cart</p>
+        </div>
+        <div id="menuStatus" class="badge badge-success"><span class="dot dot-success"></span> Menu Live</div>
+      </div>
+
+      <!-- CATEGORY FILTER -->
+      <div class="category-tabs" id="categoryTabs">
+        <button class="cat-btn active" data-cat="All">All</button>
+        <button class="cat-btn" data-cat="Breakfast">Breakfast</button>
+        <button class="cat-btn" data-cat="Lunch">Lunch</button>
+        <button class="cat-btn" data-cat="Snacks">Snacks</button>
+        <button class="cat-btn" data-cat="Beverages">Beverages</button>
+      </div>
+
+      <!-- MENU GRID -->
+      <div class="grid-3" id="menuGrid">
+        <div class="empty-state"><div class="icon">🍽️</div><h3>Loading menu…</h3></div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR: CART -->
+    <div class="sidebar">
+      <h3 style="margin-bottom:1.25rem">🛒 Your Cart <span id="cartCount" class="badge badge-primary" style="margin-left:.5rem">0</span></h3>
+      <div id="cartItems">
+        <div id="cartEmpty"><span style="font-size:2rem">🛒</span><p>Your cart is empty</p></div>
+      </div>
+      <div id="cartFooter" class="hidden">
+        <div class="cart-total-row">
+          <span>Total</span>
+          <span id="cartTotal" style="color:var(--accent)">₹0</span>
+        </div>
+        <button class="btn btn-accent btn-full btn-lg mt-2" onclick="proceedToCheckout()">Proceed to Checkout →</button>
+        <button class="btn btn-ghost btn-full btn-sm mt-2" onclick="clearCart()">Clear Cart</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const user = requireAuth('student');
+    if (user) document.getElementById('userName').textContent = user.name.split(' ')[0];
+
+    let menuItems = [];
+    let cart = JSON.parse(localStorage.getItem('cq_cart') || '[]');
+
+    const renderMenu = (category = 'All') => {
+      const grid = document.getElementById('menuGrid');
+      const items = category === 'All' ? menuItems : menuItems.filter(i => i.category === category);
+      if (!items.length) { grid.innerHTML = '<div class="empty-state"><div class="icon">🍽️</div><h3>No items found</h3></div>'; return; }
+      grid.innerHTML = items.map(item => `
+        <div class="menu-card ${!item.availability ? 'unavailable' : ''}" onclick="${item.availability ? `addToCart('${item._id}','${item.item_name}',${item.price})` : ''}">
+          <img src="${item.image_url || 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400'}" alt="${item.item_name}" loading="lazy"/>
+          <div class="menu-card-body">
+            <div class="menu-card-name">${item.item_name}</div>
+            <div class="menu-card-desc">${item.description}</div>
+            <div class="menu-card-footer">
+              <span class="price">₹${item.price}</span>
+              ${item.availability
+                ? `<button class="btn btn-primary btn-sm">+ Add</button>`
+                : `<span class="badge badge-danger">Unavailable</span>`}
+            </div>
+          </div>
+        </div>`).join('');
+    };
+
+    const renderCart = () => {
+      const container = document.getElementById('cartItems');
+      const footer    = document.getElementById('cartFooter');
+      const empty     = document.getElementById('cartEmpty');
+      document.getElementById('cartCount').textContent = cart.reduce((a,i)=>a+i.qty,0);
+
+      if (!cart.length) {
+        container.innerHTML = '<div id="cartEmpty" style="text-align:center;padding:2rem;color:var(--text-dim)"><span style="font-size:2rem">🛒</span><p>Your cart is empty</p></div>';
+        footer.classList.add('hidden'); return;
+      }
+      footer.classList.remove('hidden');
+      const total = cart.reduce((a,i)=>a+i.price*i.qty,0);
+      document.getElementById('cartTotal').textContent = `₹${total}`;
+      container.innerHTML = cart.map((item,idx)=>`
+        <div class="cart-item">
+          <div class="cart-item-name">${item.name}</div>
+          <div class="qty-control">
+            <button class="qty-btn" onclick="changeQty(${idx},-1)">−</button>
+            <span class="qty-val">${item.qty}</span>
+            <button class="qty-btn" onclick="changeQty(${idx},1)">+</button>
+          </div>
+          <div style="min-width:60px;text-align:right;color:var(--accent);font-weight:600">₹${item.price*item.qty}</div>
+        </div>`).join('');
+    };
+
+    const addToCart = (id, name, price) => {
+      const existing = cart.find(i=>i.id===id);
+      if (existing) existing.qty++;
+      else cart.push({ id, name, price, qty: 1 });
+      localStorage.setItem('cq_cart', JSON.stringify(cart));
+      renderCart();
+      toast(`${name} added to cart!`, 'success');
+    };
+
+    const changeQty = (idx, delta) => {
+      cart[idx].qty += delta;
+      if (cart[idx].qty <= 0) cart.splice(idx, 1);
+      localStorage.setItem('cq_cart', JSON.stringify(cart));
+      renderCart();
+    };
+
+    const clearCart = () => { cart = []; localStorage.removeItem('cq_cart'); renderCart(); };
+
+    const proceedToCheckout = () => {
+      if (!cart.length) { toast('Your cart is empty.', 'error'); return; }
+      window.location.href = '/checkout.html';
+    };
+
+    // Category filter
+    document.getElementById('categoryTabs').addEventListener('click', (e) => {
+      if (e.target.classList.contains('cat-btn')) {
+        document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+        e.target.classList.add('active');
+        renderMenu(e.target.dataset.cat);
+      }
+    });
+
+    // Load menu
+    (async()=>{
+      showLoading();
+      try {
+        const res = await api.get('/menu');
+        menuItems = res.data;
+        renderMenu();
+        renderCart();
+      } catch (err) { toast('Failed to load menu.', 'error'); }
+      finally { hideLoading(); }
+    })();
+  </script>
+</body>
+</html>

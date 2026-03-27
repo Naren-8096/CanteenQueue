@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Order Confirmed – CanteenQueue</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .confetti { animation: float 2s ease-in-out infinite; display:block; font-size:3rem; }
+    .status-timeline { display:flex; flex-direction:column; gap:.75rem; }
+    .status-row { display:flex; align-items:center; gap:1rem; padding:.75rem 1rem; border-radius:var(--radius-sm); border:1px solid var(--border); }
+    .status-row.active { border-color:var(--primary); background:rgba(14,165,233,0.05); }
+    .status-row.done { border-color:var(--success); background:rgba(34,197,94,0.05); }
+    .status-row .status-icon { font-size:1.3rem; min-width:30px; }
+    .status-row .status-text { flex:1; }
+    .status-row .status-label { font-weight:800; font-size:.9rem; color:#1a1a2e; }
+    .status-row .status-sub { font-size:.8rem; color:#444; font-weight:500; }
+    /* extra overrides for hero-bg light background */
+    h3 { color: #0f172a; }
+    .card { color: #1e293b; }
+    p { color: #475569; }
+  </style>
+</head>
+<body class="hero-bg">
+  <div class="loading-overlay hidden" id="loading-overlay">
+    <div class="loading-box"><div class="spinner"></div><p>Loading…</p></div>
+  </div>
+
+  <nav class="navbar">
+    <a href="/" class="navbar-brand">🍽️ Canteen<span>Queue</span></a>
+    <div class="navbar-nav">
+      <a href="student-dashboard.html" class="btn btn-ghost btn-sm">+ New Order</a>
+      <button onclick="logout()" class="btn btn-outline btn-sm">Logout</button>
+    </div>
+  </nav>
+
+  <div style="max-width:700px;margin:2rem auto;padding:0 1.5rem">
+    <!-- SUCCESS BANNER -->
+    <div class="card text-center mb-3 animate-fade-up" style="padding:2.5rem">
+      <span class="confetti">🎉</span>
+      <h2 class="mt-2">Order Confirmed!</h2>
+      <p>Payment successful. Show your OTP at the counter to collect your food.</p>
+    </div>
+
+    <!-- TOKEN & OTP -->
+    <div class="grid-2 mb-3">
+      <div class="token-box animate-fade-up" style="animation-delay:.1s">
+        <p style="font-size:.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem">Your Token</p>
+        <div class="token-number" id="tokenDisplay">—</div>
+        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.5rem">Show at counter</p>
+      </div>
+      <div class="token-box animate-fade-up" style="animation-delay:.2s;border-color:rgba(249,115,22,0.3);background:rgba(249,115,22,0.05)">
+        <p style="font-size:.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem">Your OTP</p>
+        <div class="otp-number" id="otpDisplay">—</div>
+        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.5rem">Tell staff at counter</p>
+      </div>
+    </div>
+
+    <!-- ORDER STATUS TRACKER -->
+    <div class="card mb-3 animate-fade-up" style="animation-delay:.3s">
+      <h3 class="mb-3">📊 Order Status</h3>
+      <div class="status-timeline" id="statusTimeline">
+        <div class="status-row" id="st-ordered">
+          <div class="status-icon">🛒</div>
+          <div class="status-text"><div class="status-label">Order Placed</div><div class="status-sub">Payment confirmed</div></div>
+          <span class="badge badge-success">Done</span>
+        </div>
+        <div class="status-row" id="st-otp">
+          <div class="status-icon">✅</div>
+          <div class="status-text"><div class="status-label">OTP Verification</div><div class="status-sub">Show OTP at the counter</div></div>
+          <span id="otpBadge" class="badge badge-warning">Pending</span>
+        </div>
+        <div class="status-row" id="st-queue">
+          <div class="status-icon">📋</div>
+          <div class="status-text">
+            <div class="status-label">In Queue</div>
+            <div class="status-sub">Queue position: <span id="queuePos">—</span></div>
+          </div>
+          <span id="queueBadge" class="badge badge-primary">Waiting</span>
+        </div>
+        <div class="status-row" id="st-prep">
+          <div class="status-icon">🍳</div>
+          <div class="status-text"><div class="status-label">Preparing</div><div class="status-sub">Your food is being made</div></div>
+          <span id="prepBadge" class="badge" style="opacity:.4">—</span>
+        </div>
+        <div class="status-row" id="st-done">
+          <div class="status-icon">🎉</div>
+          <div class="status-text"><div class="status-label">Delivered</div><div class="status-sub">Enjoy your meal!</div></div>
+          <span id="doneBadge" class="badge" style="opacity:.4">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card animate-fade-up" style="animation-delay:.4s">
+      <button class="btn btn-primary btn-full" id="refreshBtn" onclick="loadStatus()">🔄 Refresh Status</button>
+      <p class="text-center mt-2" style="font-size:.8rem;color:var(--text-muted)">Auto-refreshes every 15 seconds</p>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    requireAuth('student');
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId   = urlParams.get('order');
+    const pending   = JSON.parse(localStorage.getItem('cq_pending_order') || 'null');
+
+    // Display token + OTP from localStorage (only shown once after payment)
+    if (pending) {
+      document.getElementById('tokenDisplay').textContent = `#${pending.token}`;
+      document.getElementById('otpDisplay').textContent = pending.otp;
+    }
+
+    const updateStatus = (status, queuePos) => {
+      const statuses = ['Ordered', 'OTP Verified', 'In Queue', 'Preparing', 'Delivered'];
+      const idx = statuses.indexOf(status);
+
+      document.getElementById('st-ordered').classList.toggle('done', idx >= 0);
+      document.getElementById('st-otp').classList.toggle('done', idx >= 1);
+      document.getElementById('st-otp').classList.toggle('active', idx === 1);
+      document.getElementById('otpBadge').textContent = idx >= 1 ? '✓ Verified' : 'Pending';
+      document.getElementById('otpBadge').className = `badge ${idx >= 1 ? 'badge-success' : 'badge-warning'}`;
+
+      document.getElementById('st-queue').classList.toggle('done', idx >= 2);
+      document.getElementById('st-queue').classList.toggle('active', idx === 2);
+      document.getElementById('queuePos').textContent = queuePos !== null ? `#${queuePos}` : '—';
+      document.getElementById('queueBadge').textContent = idx >= 2 ? (idx > 2 ? '✓ Done' : `#${queuePos}`) : 'Waiting';
+      document.getElementById('queueBadge').className = `badge ${idx >= 2 ? 'badge-success' : 'badge-primary'}`;
+
+      document.getElementById('st-prep').classList.toggle('done', idx >= 3);
+      document.getElementById('st-prep').classList.toggle('active', idx === 3);
+      document.getElementById('prepBadge').textContent = idx >= 3 ? (idx > 3 ? '✓ Done' : '🍳 Cooking') : '—';
+      document.getElementById('prepBadge').style.opacity = idx >= 3 ? '1' : '.4';
+      document.getElementById('prepBadge').className = `badge ${idx >= 3 ? 'badge-warning' : ''}`;
+
+      document.getElementById('st-done').classList.toggle('done', idx >= 4);
+      document.getElementById('doneBadge').textContent = idx >= 4 ? '🎉 Delivered!' : '—';
+      document.getElementById('doneBadge').style.opacity = idx >= 4 ? '1' : '.4';
+      document.getElementById('doneBadge').className = `badge ${idx >= 4 ? 'badge-success' : ''}`;
+    };
+
+    const loadStatus = async () => {
+      if (!orderId) return;
+      try {
+        const res = await api.get(`/order/status/${orderId}`);
+        const d = res.data;
+        if (!pending) {
+          document.getElementById('tokenDisplay').textContent = `#${d.token_number}`;
+        }
+        updateStatus(d.order_status, d.queue_position);
+      } catch (err) { toast('Could not refresh status.', 'error'); }
+    };
+
+    if (orderId) {
+      loadStatus();
+      setInterval(loadStatus, 15000);
+    }
+  </script>
+</body>
+</html>

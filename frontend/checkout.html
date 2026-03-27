@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Checkout – CanteenQueue</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    /* Mock Payment Modal */
+    .mock-overlay {
+      display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+      backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;
+    }
+    .mock-overlay.active { display:flex; }
+    .mock-modal {
+      background:var(--surface);border-radius:1.25rem;padding:2rem;width:min(420px,92vw);
+      box-shadow:0 20px 60px rgba(0,0,0,.4);animation:slideUp .25s ease;
+    }
+    @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+    .mock-header { display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:1rem; }
+    .mock-logo { background:linear-gradient(135deg,#0ea5e9,#6366f1);border-radius:.6rem;width:2.5rem;height:2.5rem;display:flex;align-items:center;justify-content:center;font-size:1.2rem; }
+    .mock-badge { font-size:.7rem;background:#fbbf24;color:#000;border-radius:99px;padding:.2rem .6rem;font-weight:700; }
+    .mock-amount { font-size:1.6rem;font-weight:800;color:var(--accent);text-align:center;margin-bottom:1.25rem; }
+    .mock-input { width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:.6rem;padding:.7rem 1rem;color:var(--text);font-size:.95rem;margin-bottom:.75rem;box-sizing:border-box; }
+    .mock-input:focus { outline:none;border-color:var(--primary); }
+    .mock-row { display:grid;grid-template-columns:1fr 1fr;gap:.75rem; }
+    .mock-pay-btn { width:100%;margin-top:.5rem;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;border:none;border-radius:.75rem;padding:.9rem;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity .2s; }
+    .mock-pay-btn:hover { opacity:.9; }
+    .mock-pay-btn:disabled { opacity:.6;cursor:not-allowed; }
+    .mock-cancel { display:block;text-align:center;margin-top:.75rem;font-size:.85rem;color:var(--text-muted);cursor:pointer; }
+    .mock-cancel:hover { color:var(--text); }
+  </style>
+</head>
+<body class="hero-bg">
+  <div class="loading-overlay hidden" id="loading-overlay">
+    <div class="loading-box"><div class="spinner"></div><p>Processing…</p></div>
+  </div>
+
+  <!-- Dummy Payment Modal -->
+  <div class="mock-overlay" id="mockOverlay">
+    <div class="mock-modal">
+      <div class="mock-header">
+        <div class="mock-logo">💳</div>
+        <div>
+          <strong>CanteenQueue Pay</strong><br/>
+          <span style="font-size:.8rem;color:var(--text-muted)">Secure Checkout</span>
+        </div>
+        <span class="mock-badge" style="margin-left:auto">TEST MODE</span>
+      </div>
+      <div class="mock-amount" id="mockAmount">₹0</div>
+      <input class="mock-input" type="text" placeholder="Card Number" value="4111 1111 1111 1111" readonly/>
+      <div class="mock-row">
+        <input class="mock-input" type="text" placeholder="MM/YY" value="12/28" readonly/>
+        <input class="mock-input" type="text" placeholder="CVV" value="123" readonly/>
+      </div>
+      <input class="mock-input" type="text" placeholder="Name on Card" value="Test User" readonly/>
+      <button class="mock-pay-btn" id="mockPayBtn" onclick="confirmMockPayment()">✅ Pay Now (Test)</button>
+      <span class="mock-cancel" onclick="cancelMockPayment()">✕ Cancel</span>
+    </div>
+  </div>
+
+  <nav class="navbar">
+    <a href="/" class="navbar-brand">🍽️ Canteen<span>Queue</span></a>
+    <div class="navbar-nav">
+      <a href="student-dashboard.html" class="btn btn-ghost btn-sm">← Back to Menu</a>
+      <button onclick="logout()" class="btn btn-outline btn-sm">Logout</button>
+    </div>
+  </nav>
+
+  <div style="max-width:700px;margin:3rem auto;padding:0 1.5rem">
+    <h2 class="mb-3">🧾 Order Summary</h2>
+
+    <div class="card mb-3" id="orderSummaryCard">
+      <div id="cartItemsPreview"></div>
+      <hr class="divider"/>
+      <div style="display:flex;justify-content:space-between;font-size:1.2rem;font-weight:800">
+        <span>Total Amount</span>
+        <span id="totalAmt" style="color:var(--accent)">₹0</span>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <h3 class="mb-2">📍 Pick-up Info</h3>
+      <p>Your order will be ready for pick-up at the <strong>Main Counter</strong> once your token is called.</p>
+    </div>
+
+    <div id="errorMsg" class="error-msg hidden mb-2"></div>
+
+    <button class="btn btn-accent btn-full btn-lg" id="payBtn" onclick="initiatePayment()">
+      💳 Pay with Razorpay
+    </button>
+    <p class="text-center mt-2" style="font-size:.8rem;color:#64748b">Secured by Razorpay • 100% safe</p>
+  </div>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    requireAuth('student');
+    const cart = JSON.parse(localStorage.getItem('cq_cart') || '[]');
+    if (!cart.length) { window.location.href = '/student-dashboard.html'; }
+
+    const total = cart.reduce((a,i)=>a+i.price*i.qty, 0);
+    document.getElementById('totalAmt').textContent = `₹${total}`;
+    document.getElementById('cartItemsPreview').innerHTML = cart.map(i=>`
+      <div style="display:flex;justify-content:space-between;padding:.6rem 0;border-bottom:1px solid rgba(0,0,0,0.08)">
+        <span style="color:#1e293b;font-weight:500">${i.name} <span style="color:#64748b;font-weight:400">x${i.qty}</span></span>
+        <span style="color:var(--accent);font-weight:600">₹${i.price*i.qty}</span>
+      </div>`).join('') + `<div style="display:flex;justify-content:space-between;padding:.6rem 0">
+        <span style="color:#64748b">Platform Fee</span><span style="color:#64748b">Free</span></div>`;
+
+    let currentOrderId = null;
+    let currentPayRes  = null;
+
+    const initiatePayment = async () => {
+      const btn   = document.getElementById('payBtn');
+      const errMsg = document.getElementById('errorMsg');
+      errMsg.classList.add('hidden');
+      btn.disabled = true;
+      btn.textContent = 'Creating order…';
+      showLoading();
+
+      try {
+        // 1. Create canteen order
+        const orderRes = await api.post('/order/create', {
+          items: cart.map(i=>({ item_id: i.id, quantity: i.qty }))
+        });
+        currentOrderId = orderRes.data.order_id;
+        localStorage.setItem('cq_pending_order', JSON.stringify({
+          order_id: currentOrderId,
+          otp: orderRes.data.otp_code,
+          token: orderRes.data.token_number
+        }));
+
+        // 2. Create payment order
+        const payRes = await api.post('/payment/create-order', { order_id: currentOrderId });
+        hideLoading();
+        currentPayRes = payRes;
+
+        // MOCK MODE — show dummy popup
+        if (payRes.mock) {
+          document.getElementById('mockAmount').textContent = `₹${total}`;
+          document.getElementById('mockOverlay').classList.add('active');
+          btn.textContent = '💳 Pay with Razorpay';
+          btn.disabled = false;
+          return;
+        }
+
+        // REAL RAZORPAY
+        const options = {
+          key: payRes.data.key_id,
+          amount: payRes.data.amount,
+          currency: 'INR',
+          name: 'CanteenQueue',
+          description: `Token #${payRes.data.token_number}`,
+          order_id: payRes.data.razorpay_order_id,
+          handler: async (response) => {
+            showLoading();
+            try {
+              await api.post('/payment/verify', {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                order_id: currentOrderId,
+              });
+              localStorage.removeItem('cq_cart');
+              window.location.href = `/order-confirmation.html?order=${currentOrderId}`;
+            } catch (err) {
+              hideLoading();
+              toast('Payment verification failed: ' + err.message, 'error');
+            }
+          },
+          prefill: { email: getUser()?.email || '' },
+          theme: { color: '#0ea5e9' },
+          modal: { ondismiss: () => { btn.disabled = false; btn.textContent = '💳 Pay with Razorpay'; }}
+        };
+        const rzp = new Razorpay(options);
+        rzp.on('payment.failed', (resp) => {
+          hideLoading();
+          toast('Payment failed: ' + resp.error.description, 'error');
+          btn.disabled = false; btn.textContent = '💳 Pay with Razorpay';
+        });
+        rzp.open();
+        btn.textContent = '💳 Pay with Razorpay';
+
+      } catch (err) {
+        hideLoading();
+        errMsg.textContent = err.message;
+        errMsg.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = '💳 Pay with Razorpay';
+      }
+    };
+
+    // Mock payment confirm
+    const confirmMockPayment = async () => {
+      const mockBtn = document.getElementById('mockPayBtn');
+      mockBtn.disabled = true;
+      mockBtn.textContent = 'Processing…';
+      showLoading();
+      try {
+        await api.post('/payment/verify', { order_id: currentOrderId });
+        localStorage.removeItem('cq_cart');
+        document.getElementById('mockOverlay').classList.remove('active');
+        window.location.href = `/order-confirmation.html?order=${currentOrderId}`;
+      } catch (err) {
+        hideLoading();
+        toast('Payment failed: ' + err.message, 'error');
+        mockBtn.disabled = false;
+        mockBtn.textContent = '✅ Pay Now (Test)';
+      }
+    };
+
+    const cancelMockPayment = () => {
+      document.getElementById('mockOverlay').classList.remove('active');
+      const btn = document.getElementById('payBtn');
+      btn.disabled = false;
+      btn.textContent = '💳 Pay with Razorpay';
+    };
+  </script>
+</body>
+</html>
+
