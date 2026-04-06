@@ -19,6 +19,15 @@
     h3 { color: #0f172a; }
     .card { color: #1e293b; }
     p { color: #475569; }
+    /* Item queue card */
+    .item-queue-row { display:flex; align-items:center; justify-content:space-between; padding:.7rem 0; border-bottom:1px solid var(--border); gap:.5rem; }
+    .item-queue-row:last-child { border-bottom:none; }
+    .item-queue-name { font-weight:600; font-size:.95rem; color:#1e293b; }
+    .item-queue-qty { font-size:.8rem; color:#64748b; }
+    .item-queue-badge { display:inline-flex; align-items:center; gap:.35rem; padding:.3rem .75rem; border-radius:99px; font-size:.82rem; font-weight:700; white-space:nowrap; }
+    .item-queue-badge.first { background:rgba(34,197,94,.15); color:#15803d; border:1px solid rgba(34,197,94,.3); }
+    .item-queue-badge.waiting { background:rgba(14,165,233,.12); color:#0369a1; border:1px solid rgba(14,165,233,.25); }
+    .item-queue-badge.not-queued { background:rgba(249,115,22,.1); color:#c2410c; border:1px solid rgba(249,115,22,.25); }
   </style>
 </head>
 <body class="hero-bg">
@@ -29,6 +38,7 @@
   <nav class="navbar">
     <a href="/" class="navbar-brand">🍽️ Canteen<span>Queue</span></a>
     <div class="navbar-nav">
+      <a href="my-orders.html" class="btn btn-ghost btn-sm" style="font-weight:700">My Orders</a>
       <a href="student-dashboard.html" class="btn btn-ghost btn-sm">+ New Order</a>
       <button onclick="logout()" class="btn btn-outline btn-sm">Logout</button>
     </div>
@@ -91,6 +101,13 @@
       </div>
     </div>
 
+    <!-- ITEM QUEUE STATUS -->
+    <div class="card mb-3 animate-fade-up" id="itemQueueCard" style="animation-delay:.35s;display:none">
+      <h3 class="mb-1">🍽️ Item Queue Status</h3>
+      <p style="font-size:.82rem;color:#64748b;margin-bottom:1rem">People ahead of you per item in the active queue</p>
+      <div id="itemQueueList"></div>
+    </div>
+
     <div class="card animate-fade-up" style="animation-delay:.4s">
       <button class="btn btn-primary btn-full" id="refreshBtn" onclick="loadStatus()">🔄 Refresh Status</button>
       <p class="text-center mt-2" style="font-size:.8rem;color:var(--text-muted)">Auto-refreshes every 15 seconds</p>
@@ -149,7 +166,42 @@
           document.getElementById('tokenDisplay').textContent = `#${d.token_number}`;
         }
         updateStatus(d.order_status, d.queue_position);
+
+        // Load per-item queue positions
+        try {
+          const qRes = await api.get(`/queue/item-positions/${orderId}`);
+          renderItemQueue(qRes.data);
+        } catch (_) { /* not in queue yet — hide card */ }
       } catch (err) { toast('Could not refresh status.', 'error'); }
+    };
+
+    const renderItemQueue = (data) => {
+      const card = document.getElementById('itemQueueCard');
+      const list = document.getElementById('itemQueueList');
+      if (!data.in_queue) {
+        card.style.display = 'none';
+        return;
+      }
+      card.style.display = 'block';
+      list.innerHTML = data.items.map(item => {
+        const ahead = item.people_ahead;
+        let badgeClass, badgeText;
+        if (ahead === 0) {
+          badgeClass = 'first';
+          badgeText  = '🥇 You\'re first!';
+        } else {
+          badgeClass = 'waiting';
+          badgeText  = `⏳ ${ahead} order${ahead > 1 ? 's' : ''} ahead`;
+        }
+        return `
+          <div class="item-queue-row">
+            <div>
+              <div class="item-queue-name">${item.item_name}</div>
+              <div class="item-queue-qty">Qty: ${item.quantity} &nbsp;•&nbsp; ₹${item.price * item.quantity}</div>
+            </div>
+            <span class="item-queue-badge ${badgeClass}">${badgeText}</span>
+          </div>`;
+      }).join('');
     };
 
     if (orderId) {

@@ -52,4 +52,23 @@ const getMe = async (req, res) => {
   res.json({ success: true, user: req.user });
 };
 
-module.exports = { register, login, getMe };
+// PUT /api/auth/me
+const updateMe = async (req, res, next) => {
+  try {
+    const { name, password } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    if (name) user.name = name;
+    if (password) user.password = password; // Will be hashed by pre-save hook
+
+    await user.save();
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: { id: user._id, name: user.name, email: user.email, role: user.role }
+    });
+  } catch (err) { next(err); }
+};
+
+module.exports = { register, login, getMe, updateMe };

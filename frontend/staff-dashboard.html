@@ -3,115 +3,358 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Staff Dashboard – CanteenQueue</title>
+  <title>Staff Control Panel – CanteenQueue</title>
+  <meta name="description" content="Staff control panel for managing orders, OTP verification, queue, and menu."/>
   <link rel="stylesheet" href="css/style.css"/>
   <style>
-    .tab-nav { display:flex; gap:.5rem; border-bottom:1px solid var(--border); margin-bottom:1.5rem; }
-    .tab-btn { padding:.6rem 1.25rem; background:none; border:none; border-bottom:2px solid transparent; color:var(--text-muted); font-family:inherit; font-size:.9rem; font-weight:600; cursor:pointer; transition:var(--transition); }
-    .tab-btn.active { color:var(--primary); border-bottom-color:var(--primary); }
-    .tab-content { display:none; }
-    .tab-content.active { display:block; }
-    .order-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1.25rem; margin-bottom:1rem; transition:var(--transition); }
-    .order-card:hover { border-color:var(--border-bright); }
-    .order-card-header { display:flex; align-items:center; justify-content:space-between; gap:.75rem; flex-wrap:wrap; margin-bottom:.75rem; }
-    .status-select { background:var(--bg-card2); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-family:inherit; font-size:.85rem; padding:.35rem .75rem; cursor:pointer; }
-    .avail-row { display:flex; align-items:center; justify-content:space-between; padding:.875rem 0; border-bottom:1px solid var(--border); gap:1rem; }
-    .avail-row:last-child { border:none; }
-    .avail-name { font-weight:600; font-size:.95rem; }
-    .avail-price { color:var(--accent); font-size:.85rem; }
-    .menu-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
-    @media(max-width:600px){ .menu-form-grid{grid-template-columns:1fr} }
-    .stat-row { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:2rem; }
-    @media(max-width:700px){ .stat-row{grid-template-columns:repeat(2,1fr)} }
-    .otp-form { display:flex; gap:.75rem; flex-wrap:wrap; align-items:flex-end; }
-    .otp-form .input { max-width:200px; }
+    /* ── STAFF SHELL ── */
+    .shell {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem;
+    }
+
+    /* ── STATS ROW ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    @media(max-width:768px){ .stats-row{ grid-template-columns:repeat(2,1fr); } }
+    @media(max-width:440px){ .stats-row{ grid-template-columns:1fr 1fr; } }
+
+    .stat-tile {
+      background: var(--surface);
+      border: none;
+      border-radius: var(--radius-lg);
+      padding: 1.75rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: .25rem;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-tile::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 4px;
+    }
+    .stat-tile:nth-child(1)::before { background: var(--accent); }
+    .stat-tile:nth-child(2)::before { background: var(--warning); }
+    .stat-tile:nth-child(3)::before { background: var(--danger); }
+    .stat-tile:nth-child(4)::before { background: var(--success); }
+    .stat-tile:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
+    
+    .stat-tile:nth-child(1) .stat-tile-icon { color: var(--accent); background: var(--accent-soft); }
+    .stat-tile:nth-child(2) .stat-tile-icon { color: var(--warning); background: var(--warning-soft); }
+    .stat-tile:nth-child(3) .stat-tile-icon { color: var(--danger); background: var(--danger-soft); }
+    .stat-tile:nth-child(4) .stat-tile-icon { color: var(--success); background: var(--success-soft); }
+
+    .stat-tile-icon { 
+      font-size: 1.5rem; margin-bottom: .5rem; 
+      width: 44px; height: 44px; border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .stat-tile-value { font-size: 2.5rem; font-weight: 800; color: var(--ink); letter-spacing: -0.04em; line-height: 1; margin-bottom: .2rem; }
+    .stat-tile-label { font-size: .85rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); }
+
+    /* ── TAB NAV ── */
+    .tab-nav {
+      display: flex;
+      gap: .75rem;
+      border-bottom: none;
+      margin-bottom: 2.5rem;
+      overflow-x: auto;
+      padding: .5rem;
+      background: var(--surface);
+      border-radius: var(--radius-full);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-light);
+    }
+    .tab-btn {
+      padding: .75rem 1.75rem;
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-full);
+      color: var(--ink-faint);
+      font-family: var(--font); font-size: .95rem; font-weight: 700;
+      cursor: pointer;
+      transition: all var(--transition);
+      white-space: nowrap;
+      letter-spacing: -.01em;
+    }
+    .tab-btn:hover { color: var(--ink); background: var(--surface-bg); }
+    .tab-btn.active { color: var(--ink); background: var(--surface-2); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeInUp .4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+    /* ── SECTION HEAD ── */
+    .section-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap;
+    }
+    .section-head h3 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; }
+
+    /* ── ORDER CARD ── */
+    .order-card {
+      background: var(--surface);
+      border: none;
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      transition: all var(--transition);
+      box-shadow: var(--shadow-sm);
+      border-left: 6px solid transparent;
+    }
+    .order-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .order-card[data-status="Ordered"] { border-left-color: var(--ink-dim); }
+    .order-card[data-status="OTP Verified"] { border-left-color: var(--accent); }
+    .order-card[data-status="In Queue"] { border-left-color: var(--warning); }
+    .order-card[data-status="Preparing"] { border-left-color: var(--danger); }
+    .order-card[data-status="Delivered"] { border-left-color: var(--success); }
+    .order-card[data-status="Cancelled"] { border-left-color: var(--ink-light); opacity: 0.7; }
+
+    .order-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;
+    }
+    .order-token { font-size: 1.35rem; font-weight: 800; color: var(--ink); letter-spacing: -0.02em; display:flex; align-items:center; gap:.5rem;}
+    .order-meta { font-size: .9rem; color: var(--ink-dim); margin-top: .4rem; font-weight:500; }
+    .order-items { 
+      font-size: .95rem; color: var(--ink); padding-top: 1rem; 
+      border-top: 1px solid var(--border-light); font-weight:600; 
+      display:flex; flex-wrap:wrap; gap: 1rem;
+    }
+    .order-items span { background:var(--surface-bg); padding:.3rem .8rem; border-radius:var(--radius-full); border:1px solid var(--border);}
+    .order-actions { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+
+    /* ── STATUS SELECT ── */
+    .status-select {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-full);
+      color: var(--ink);
+      font-family: var(--font); font-size: .9rem; font-weight: 700;
+      padding: .6rem 1.2rem;
+      cursor: pointer;
+      outline: none;
+      transition: all var(--transition);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem top 50%;
+      background-size: .65rem auto;
+      padding-right: 2.5rem;
+    }
+    .status-select:focus { border-color: var(--accent); box-shadow: var(--shadow-glow); }
+
+    /* ── OTP CARD ── */
+    .otp-card { background: var(--surface); border: none; border-radius: var(--radius-lg); padding: 2.5rem; max-width: 540px; box-shadow: var(--shadow-md); margin: 0 auto; }
+    .otp-row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-start; margin-bottom: 2rem; }
+    .otp-row .input-group { flex: 1; min-width: 140px; }
+    .otp-hint { background: var(--accent-soft); border-radius: var(--radius); padding: 1.25rem; max-width: 540px; margin: 1.5rem auto 0; text-align:center; }
+    .otp-hint p { font-size: .9rem; color:var(--accent); font-weight:600;}
+
+    /* ── AVAILABILITY LIST ── */
+    .avail-list { border:none; border-radius: var(--radius-lg); overflow: hidden; background: var(--surface); box-shadow: var(--shadow-sm); }
+    .avail-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.25rem 1.5rem; gap: 1rem;
+      border-bottom: 1px solid var(--border-light);
+      transition: background var(--transition);
+    }
+    .avail-row:last-child { border: none; }
+    .avail-row:hover { background: var(--surface-bg); }
+    .avail-name { font-weight: 800; font-size: 1.1rem; color: var(--ink); margin-bottom:.1rem; }
+    .avail-meta { font-size: .85rem; color: var(--ink-dim); font-weight:500;}
+
+    /* ── MENU FORM GRID ── */
+    .menu-form-wrap { background: var(--surface); border: none; border-radius: var(--radius-lg); padding: 2.5rem; margin-bottom: 2.5rem; box-shadow: var(--shadow-md); }
+    .menu-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media(max-width:640px){ .menu-form-grid{ grid-template-columns: 1fr; } }
+
+    /* ── IMAGE SOURCE TABS ── */
+    .img-src-tabs { display: flex; gap: .5rem; background: var(--surface-bg); border-radius: var(--radius-full); padding: .25rem; margin-bottom: 1rem; border: 1px solid var(--border); }
+    .img-src-tab {
+      flex: 1; padding: .6rem .75rem;
+      background: transparent; border: none; border-radius: var(--radius-full);
+      font-family: var(--font); font-size: .9rem; font-weight: 700;
+      color: var(--ink-faint); cursor: pointer;
+      transition: all var(--transition);
+    }
+    .img-src-tab.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
+    .img-src-panel { display: none; }
+    .img-src-panel.active { display: block; animation: fadeInUp .3s ease both; }
+
+    /* ── IMAGE PREVIEW ── */
+    .img-preview-wrap {
+      margin-top: 1rem; border: 2px dashed var(--border-dark); border-radius: var(--radius);
+      min-height: 140px; display: flex; align-items: center; justify-content: center;
+      background: var(--surface-bg); overflow: hidden; transition: border-color var(--transition);
+    }
+    .img-preview-wrap:has(img) { border-style: solid; border-color: var(--border-dark); }
+    .img-preview-wrap img { max-height: 180px; max-width: 100%; object-fit: contain; }
+    .img-preview-placeholder { font-size: .9rem; font-weight:600; color: var(--ink-dim); pointer-events: none; }
+
+    /* ── MANAGE ITEM CARD ── */
+    .manage-item {
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+      transition: box-shadow var(--transition);
+      box-shadow: var(--shadow-sm);
+    }
+    .manage-item:hover { box-shadow: var(--shadow-md); transform:translateY(-1px); }
+    .manage-item-info { flex: 1; }
+    .manage-item-name { font-weight: 800; font-size: 1.1rem; } 
+    .manage-item-sub { font-size: .85rem; color: var(--ink-dim); margin-top: .2rem; font-weight:500; }
+    .manage-item-actions { display: flex; align-items: center; gap: 1rem; }
+
+    /* ── STAFF ROLE CHIP ── */
+    .role-chip {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: var(--surface-bg); border: 1px solid var(--border);
+      border-radius: var(--radius-full); padding: .4rem 1.2rem;
+      font-size: .9rem; font-weight: 700; color: var(--ink);
+    }
+
+    /* Account Modal */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999; opacity: 1; transition: opacity .2s;
+    }
+    .modal-overlay.hidden { opacity: 0; pointer-events: none; }
+    .modal-content {
+      background: var(--surface); border-radius: var(--radius-lg);
+      padding: 2.5rem; width: 90%; max-width: 500px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1); transform: scale(1);
+      transition: transform .2s;
+    }
+    .modal-overlay.hidden .modal-content { transform: scale(0.95); }
   </style>
 </head>
 <body>
   <div class="loading-overlay hidden" id="loading-overlay">
-    <div class="loading-box"><div class="spinner"></div><p>Loading…</p></div>
+    <div class="loading-box"><div class="spinner"></div><p>Fetching the latest data…</p></div>
   </div>
 
+  <!-- NAVBAR -->
   <nav class="navbar">
-    <a href="/" class="navbar-brand">🍽️ Canteen<span>Queue</span></a>
-    <div class="navbar-nav">
-      <span style="font-size:.9rem;color:var(--text-muted)">👨‍🍳 Staff: <strong id="staffName">—</strong></span>
-      <button onclick="logout()" class="btn btn-outline btn-sm">Logout</button>
+    <a href="/" class="navbar-brand">🍽 Canteen<span>Queue</span></a>
+    <div class="navbar-nav" style="display:flex; align-items:center; gap:.5rem;">
+      <div class="role-chip">👨‍🍳 Staff: <strong id="staffName" style="color:var(--accent)">Admin</strong></div>
+      <button onclick="openAccountSettings()" class="btn btn-outline btn-sm" style="border-radius:99px">⚙️ Account</button>
+      <button onclick="logout()" class="btn btn-outline btn-sm" style="border-radius:99px">Logout</button>
     </div>
   </nav>
 
-  <div style="max-width:1200px;margin:0 auto;padding:2rem 1.5rem">
-    <!-- STATS ROW -->
-    <div class="stat-row">
-      <div class="card stat-card"><span class="stat-value" id="statTotal">0</span><span class="stat-label">Total Orders</span></div>
-      <div class="card stat-card"><span class="stat-value" id="statQueue">0</span><span class="stat-label">In Queue</span></div>
-      <div class="card stat-card"><span class="stat-value" id="statPrep">0</span><span class="stat-label">Preparing</span></div>
-      <div class="card stat-card"><span class="stat-value" id="statDone">0</span><span class="stat-label">Delivered Today</span></div>
-    </div>
+  <div class="shell">
 
-    <!-- TABS -->
-    <div class="tab-nav">
-      <button class="tab-btn active" data-tab="orders">📋 Orders</button>
-      <button class="tab-btn" data-tab="otp">🔐 OTP Verify</button>
-      <button class="tab-btn" data-tab="queue">📊 Live Queue</button>
-      <button class="tab-btn" data-tab="availability">🔁 Availability</button>
-      <button class="tab-btn" data-tab="menu">🍽️ Menu Mgmt</button>
-    </div>
-
-    <!-- ORDERS TAB -->
-    <div class="tab-content active" id="tab-orders">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-        <h3>Active Orders</h3>
-        <button class="btn btn-ghost btn-sm" onclick="loadOrders()">🔄 Refresh</button>
+    <!-- ── STATS ── -->
+    <div class="stats-row">
+      <div class="stat-tile">
+        <div class="stat-tile-icon">📋</div>
+        <div class="stat-tile-value" id="statTotal">0</div>
+        <div class="stat-tile-label">Total Orders</div>
       </div>
-      <div id="ordersList"><div class="empty-state"><div class="icon">📋</div><h3>Loading orders…</h3></div></div>
+      <div class="stat-tile">
+        <div class="stat-tile-icon">⏳</div>
+        <div class="stat-tile-value" id="statQueue">0</div>
+        <div class="stat-tile-label">In Queue</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-tile-icon">🍳</div>
+        <div class="stat-tile-value" id="statPrep">0</div>
+        <div class="stat-tile-label">Preparing</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-tile-icon">✅</div>
+        <div class="stat-tile-value" id="statDone">0</div>
+        <div class="stat-tile-label">Delivered</div>
+      </div>
     </div>
 
-    <!-- OTP VERIFY TAB -->
+    <!-- ── TABS ── -->
+    <div class="tab-nav">
+      <button class="tab-btn active" data-tab="orders">📦 Live Orders</button>
+      <button class="tab-btn" data-tab="otp">🔑 OTP Verify</button>
+      <button class="tab-btn" data-tab="queue">🚦 Live Queue</button>
+      <button class="tab-btn" data-tab="availability">🍽️ Menu Availability</button>
+      <button class="tab-btn" data-tab="menu">✏️ Manage Menu</button>
+    </div>
+
+    <!-- ── ORDERS TAB ── -->
+    <div class="tab-content active" id="tab-orders">
+      <div class="section-head">
+        <h3>Active Orders</h3>
+        <button class="btn btn-ghost" onclick="loadOrders()" style="font-weight:700">↻ Refresh List</button>
+      </div>
+      <div id="ordersList">
+        <div class="empty-state"><div class="icon">📋</div><h3>Loading orders…</h3></div>
+      </div>
+    </div>
+
+    <!-- ── OTP VERIFY TAB ── -->
     <div class="tab-content" id="tab-otp">
-      <h3 class="mb-3">🔐 Verify Customer OTP</h3>
-      <div class="card" style="max-width:500px">
-        <div class="otp-form mb-3">
-          <div class="input-group" style="flex:1">
-            <label>Token Number</label>
-            <input id="verifyOrderId" class="input" placeholder="e.g. 1004" type="number" min="1"/>
-          </div>
+      <div class="section-head"><h3 style="text-align:center;width:100%">Verify Customer OTP</h3></div>
+      <div class="otp-card">
+        <div class="otp-row">
           <div class="input-group">
+            <label>Token Number</label>
+            <input id="verifyOrderId" class="input" placeholder="e.g. 1004" type="number" min="1" style="font-size:1.1rem;font-weight:700"/>
+          </div>
+          <div class="input-group" style="max-width:160px">
             <label>OTP (4 digits)</label>
-            <input id="verifyOtp" class="input" maxlength="4" placeholder="1234" style="max-width:120px;letter-spacing:.3em;font-size:1.1rem"/>
+            <input id="verifyOtp" class="input" maxlength="4" placeholder="1234"
+                   style="letter-spacing:.4em;font-size:1.3rem;font-weight:800;text-align:center;color:var(--accent)"/>
           </div>
         </div>
-        <button class="btn btn-primary btn-full" onclick="verifyOTPAction()">✅ Verify OTP & Assign Queue</button>
-        <div id="otpResult" class="mt-3 hidden"></div>
+        <button class="btn btn-primary btn-full btn-lg" onclick="verifyOTPAction()">Verify OTP &amp; Assign Queue</button>
+        <div id="otpResult" class="mt-4 hidden" style="text-align:center"></div>
       </div>
-      <div class="card mt-3" style="max-width:500px">
-        <h3 class="mb-2">Or verify from Orders list:</h3>
-        <p style="font-size:.9rem">Go to the <strong>Orders</strong> tab, find the order, and click <strong>Verify OTP</strong> directly — no need to type the token number.</p>
+      <div class="otp-hint">
+        <p>💡 Tip: Go to <strong>Live Orders</strong> tab → click <strong>Verify OTP</strong> on an order to auto-fill.</p>
       </div>
     </div>
 
-    <!-- QUEUE TAB -->
+    <!-- ── QUEUE TAB ── -->
     <div class="tab-content" id="tab-queue">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-        <h3>📊 Live Queue</h3>
-        <button class="btn btn-ghost btn-sm" onclick="loadQueue()">🔄 Refresh</button>
+      <div class="section-head">
+        <h3>Live Customer Queue</h3>
+        <button class="btn btn-ghost" onclick="loadQueue()" style="font-weight:700">↻ Refresh</button>
       </div>
-      <div id="queueList"><div class="empty-state"><div class="icon">📋</div><h3>Queue is empty</h3></div></div>
+      <div id="queueList">
+        <div class="empty-state"><div class="icon">🚦</div><h3>Queue is empty</h3></div>
+      </div>
     </div>
 
-    <!-- AVAILABILITY TAB -->
+    <!-- ── AVAILABILITY TAB ── -->
     <div class="tab-content" id="tab-availability">
-      <h3 class="mb-3">🔁 Food Availability</h3>
-      <div class="card">
-        <div id="availabilityList"><div class="empty-state"><div class="icon">🍽️</div><h3>Loading…</h3></div></div>
+      <div class="section-head">
+        <h3>Today's Food Availability</h3>
+      </div>
+      <div class="avail-list" id="availabilityList">
+        <div class="empty-state"><div class="icon">🍽️</div><h3>Loading…</h3></div>
       </div>
     </div>
 
-    <!-- MENU MANAGEMENT TAB -->
+    <!-- ── MENU MANAGEMENT TAB ── -->
     <div class="tab-content" id="tab-menu">
-      <h3 class="mb-3">🍽️ Menu Management</h3>
-      <div class="card mb-3">
-        <h3 class="mb-3">Add New Item</h3>
+      <div class="section-head">
+        <h3>Menu Management</h3>
+      </div>
+
+      <!-- Add form -->
+      <div class="menu-form-wrap">
+        <div style="font-size:.85rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:1.5rem">Add New Item</div>
         <form id="menuForm">
           <div class="menu-form-grid">
             <div class="input-group"><label>Item Name</label><input id="mName" class="input" placeholder="e.g. Veg Biryani" required/></div>
@@ -123,14 +366,67 @@
             </div>
             <div class="input-group"><label>Prep Time (mins)</label><input id="mPrep" type="number" class="input" placeholder="10" min="1"/></div>
             <div class="input-group" style="grid-column:1/-1"><label>Description</label><input id="mDesc" class="input" placeholder="Short description…"/></div>
-            <div class="input-group" style="grid-column:1/-1"><label>Image URL</label><input id="mImg" class="input" placeholder="https://…"/></div>
+            <!-- Image source: URL or file upload -->
+            <div class="input-group" style="grid-column:1/-1; margin-top:1rem;">
+              <label>Item Image</label>
+              <div class="img-src-tabs">
+                <button type="button" class="img-src-tab active" id="imgTabUrl" onclick="switchImgTab('url')">🔗 Paste URL</button>
+                <button type="button" class="img-src-tab" id="imgTabFile" onclick="switchImgTab('file')">📁 Upload Photo</button>
+              </div>
+
+              <!-- URL panel -->
+              <div class="img-src-panel active" id="imgPanelUrl">
+                <input id="mImg" class="input" placeholder="https://example.com/image.jpg"
+                       oninput="previewUrlImage(this.value)"/>
+                <div class="img-preview-wrap" id="urlPreviewWrap">
+                  <span class="img-preview-placeholder">Image preview will appear here</span>
+                </div>
+              </div>
+
+              <!-- File upload panel -->
+              <div class="img-src-panel" id="imgPanelFile">
+                <label class="btn btn-outline" for="mImgFile" style="width:100%; display:inline-flex;align-items:center;justify-content:center;gap:.6rem;cursor:pointer;padding:1rem;border-style:dashed;">
+                  📷 Choose Photo from Device
+                </label>
+                <input id="mImgFile" type="file" accept="image/*" style="display:none" onchange="handleFileUpload(this)"/>
+                <div style="text-align:center;margin-top:.5rem;"><span id="mImgFileName" style="font-size:.85rem;font-weight:600;color:var(--ink-dim);"></span></div>
+                <div class="img-preview-wrap" id="filePreviewWrap">
+                  <span class="img-preview-placeholder">Select a photo to preview</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <button type="submit" class="btn btn-primary mt-3">+ Add Menu Item</button>
+          <button type="submit" class="btn btn-accent mt-4" style="font-size:1.05rem;padding:1rem 3rem;">+ Add Item to Menu</button>
         </form>
       </div>
 
-      <h3 class="mb-2">Existing Items</h3>
-      <div id="menuManageList"><div class="empty-state"><div class="icon">🍽️</div><h3>Loading…</h3></div></div>
+      <!-- Existing items -->
+      <div style="font-size:.85rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-faint);margin-bottom:1rem;margin-top:2rem;">Existing Items</div>
+      <div id="menuManageList">
+        <div class="empty-state"><div class="icon">🍽️</div><h3>Loading…</h3></div>
+      </div>
+    </div>
+
+  </div><!-- /shell -->
+
+  <!-- Account Settings Modal -->
+  <div id="accountModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1.5rem; font-weight: 800;">Account Settings</h3>
+        <button onclick="closeAccountSettings()" style="background:transparent; border:none; font-size:1.8rem; cursor:pointer; color:var(--ink-dim); line-height:1;">&times;</button>
+      </div>
+      <form id="accountForm" onsubmit="handleAccountUpdate(event)">
+        <div class="input-group">
+          <label>Name</label>
+          <input type="text" id="accName" class="input" required />
+        </div>
+        <div class="input-group" style="margin-top: 1rem;">
+          <label>New Password (leave blank to keep current)</label>
+          <input type="password" id="accPassword" class="input" placeholder="Min 6 characters" minlength="6" />
+        </div>
+        <button type="submit" class="btn btn-accent btn-full mt-4" style="margin-top: 2rem; font-size: 1.05rem; padding: 1rem;">Save Changes</button>
+      </form>
     </div>
   </div>
 
@@ -140,53 +436,106 @@
     const user = requireAuth('staff');
     if (user) document.getElementById('staffName').textContent = user.name;
 
-    // TAB switching
+    /* ── ACCOUNT SETTINGS ── */
+    const openAccountSettings = () => {
+      const modal = document.getElementById('accountModal');
+      document.getElementById('accName').value = user.name;
+      document.getElementById('accPassword').value = '';
+      modal.classList.remove('hidden');
+    };
+    
+    const closeAccountSettings = () => {
+      document.getElementById('accountModal').classList.add('hidden');
+    };
+
+    const handleAccountUpdate = async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('accName').value.trim();
+      const password = document.getElementById('accPassword').value.trim();
+      
+      try {
+        const body = { name };
+        if (password) body.password = password;
+        
+        const res = await api.put('/auth/me', body);
+        
+        user.name = res.user.name;
+        localStorage.setItem('cq_user', JSON.stringify(res.user));
+        document.getElementById('staffName').textContent = user.name;
+        
+        toast('Profile updated successfully!', 'success');
+        closeAccountSettings();
+        
+        if (password) {
+          toast('Password changed. Please log in again.', 'warning');
+          setTimeout(() => logout(), 1500);
+        }
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    };
+
+    /* ── TAB SWITCHING ── */
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-        if (btn.dataset.tab === 'queue') loadQueue();
+        if (btn.dataset.tab === 'queue')        loadQueue();
         if (btn.dataset.tab === 'availability') loadAvailability();
-        if (btn.dataset.tab === 'menu') loadMenuManage();
+        if (btn.dataset.tab === 'menu')         loadMenuManage();
       });
     });
 
-    const statusBadgeClass = (s) => ({ 'Ordered':'badge-warning','OTP Verified':'badge-primary','In Queue':'badge-primary','Preparing':'badge-accent','Delivered':'badge-success','Cancelled':'badge-danger' }[s] || 'badge-primary');
+    /* ── BADGE CLASS MAP ── */
+    const statusBadge = s => ({
+      'Ordered':      'badge-neutral',
+      'OTP Verified': 'badge-primary',
+      'In Queue':     'badge-primary',
+      'Preparing':    'badge-warning',
+      'Delivered':    'badge-success',
+      'Cancelled':    'badge-danger',
+    }[s] || 'badge-neutral');
 
-    // ── ORDERS ──
+    /* ── ORDERS ── */
     const loadOrders = async () => {
       try {
-        const res = await api.get('/order/all');
+        const res    = await api.get('/order/all');
         const orders = res.data;
         document.getElementById('statTotal').textContent = orders.length;
-        document.getElementById('statQueue').textContent = orders.filter(o=>o.order_status==='In Queue').length;
-        document.getElementById('statPrep').textContent  = orders.filter(o=>o.order_status==='Preparing').length;
+        document.getElementById('statQueue').textContent = orders.filter(o => o.order_status === 'In Queue').length;
+        document.getElementById('statPrep').textContent  = orders.filter(o => o.order_status === 'Preparing').length;
+        document.getElementById('statDone').textContent  = orders.filter(o => o.order_status === 'Delivered').length;
 
         if (!orders.length) {
-          document.getElementById('ordersList').innerHTML = '<div class="empty-state"><div class="icon">✅</div><h3>No active orders</h3><p>All caught up!</p></div>';
+          document.getElementById('ordersList').innerHTML =
+            '<div class="empty-state"><div class="icon">✅</div><h3>No active orders</h3><p>All caught up! Time for a coffee.</p></div>';
           return;
         }
-        document.getElementById('ordersList').innerHTML = orders.map(o=>`
-          <div class="order-card">
-            <div class="order-card-header">
+
+        document.getElementById('ordersList').innerHTML = orders.map(o => `
+          <div class="order-card" data-status="${o.order_status}">
+            <div class="order-header">
               <div>
-                <div style="display:flex;align-items:center;gap:.75rem">
-                  <strong style="font-size:1.1rem">Token #${o.token_number}</strong>
-                  <span class="badge ${statusBadgeClass(o.order_status)}">${o.order_status}</span>
-                  ${!o.otp_verified ? `<span class="badge badge-warning animate-pulse">OTP Needed</span>` : ''}
+                <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+                  <span class="order-token">#${o.token_number}</span>
+                  <span class="badge ${statusBadge(o.order_status)}" style="font-size:.8rem">${o.order_status}</span>
+                  ${!o.otp_verified ? `<span class="badge badge-warning animate-pulse" style="font-size:.8rem">OTP Needed</span>` : ''}
                 </div>
-                <div style="font-size:.85rem;color:var(--text-muted);margin-top:.25rem">${o.user_id?.name || 'Student'} • ₹${o.total_price} • ${new Date(o.createdAt).toLocaleTimeString()}</div>
+                <div class="order-meta">Customer: <strong>${o.user_id?.name || 'Student'}</strong> &nbsp;·&nbsp; ₹${o.total_price} &nbsp;·&nbsp; ${new Date(o.createdAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
               </div>
-              <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-                ${!o.otp_verified ? `<button class="btn btn-primary btn-sm" onclick="quickVerifyOTP('${o._id}')">🔐 Verify OTP</button>` : ''}
+              <div class="order-actions">
+                ${!o.otp_verified
+                  ? `<button class="btn btn-primary btn-sm" onclick="quickVerifyOTP('${o._id}')" style="box-shadow:none">Verify OTP</button>`
+                  : ''}
                 <select class="status-select" onchange="updateStatus('${o._id}', this.value)">
-                  ${['Ordered','OTP Verified','In Queue','Preparing','Delivered','Cancelled'].map(s=>`<option ${o.order_status===s?'selected':''}>${s}</option>`).join('')}
+                  ${['Ordered','OTP Verified','In Queue','Preparing','Delivered','Cancelled']
+                      .map(s => `<option ${o.order_status === s ? 'selected' : ''}>${s}</option>`).join('')}
                 </select>
               </div>
             </div>
-            <div style="font-size:.85rem;color:var(--text-muted)">${o.items.map(i=>`${i.item_name} x${i.quantity}`).join(' • ')}</div>
+            <div class="order-items">${o.items.map(i => `<span>${i.item_name} × ${i.quantity}</span>`).join('')}</div>
           </div>`).join('');
       } catch (err) { toast('Failed to load orders: ' + err.message, 'error'); }
     };
@@ -199,16 +548,16 @@
       } catch (err) { toast(err.message, 'error'); }
     };
 
-    const quickVerifyOTP = (orderId) => {
+    const quickVerifyOTP = orderId => {
       document.getElementById('verifyOrderId').value = orderId;
-      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       document.querySelector('[data-tab="otp"]').classList.add('active');
       document.getElementById('tab-otp').classList.add('active');
       document.getElementById('verifyOtp').focus();
     };
 
-    // ── OTP VERIFY ──
+    /* ── OTP VERIFY ── */
     const verifyOTPAction = async () => {
       const orderId = document.getElementById('verifyOrderId').value.trim();
       const otp     = document.getElementById('verifyOtp').value.trim();
@@ -216,59 +565,58 @@
       if (!orderId || !otp) { toast('Enter Order ID and OTP.', 'error'); return; }
       try {
         const res = await api.post('/order/verify-otp', { order_id: orderId, otp });
-        resDiv.innerHTML = `<div class="card" style="border-color:var(--success)">
-          <h3 style="color:var(--success)">✅ OTP Verified!</h3>
-          <p>Queue position assigned: <strong>#${res.data.queue_position}</strong></p>
-          <p>Token: <strong>#${res.data.token_number}</strong></p>
-        </div>`;
+        resDiv.innerHTML = `
+          <div style="background:var(--success-soft);border:1px solid var(--success);border-radius:var(--radius);padding:1.5rem;">
+            <div style="color:var(--success);font-weight:800;font-size:1.2rem;margin-bottom:.5rem">✓ OTP Verified Successfully</div>
+            <p style="font-size:1rem;color:var(--ink)">Queue position: <strong style="font-size:1.2rem">#${res.data.queue_position}</strong> &nbsp;|&nbsp; Token: <strong style="font-size:1.2rem">#${res.data.token_number}</strong></p>
+          </div>`;
         resDiv.classList.remove('hidden');
         document.getElementById('verifyOrderId').value = '';
         document.getElementById('verifyOtp').value = '';
         loadOrders();
       } catch (err) {
-        resDiv.innerHTML = `<div class="card" style="border-color:var(--danger)"><p style="color:var(--danger)">❌ ${err.message}</p></div>`;
+        resDiv.innerHTML = `<div style="background:var(--danger-soft);border:1px solid var(--danger);border-radius:var(--radius);padding:1.5rem;"><p style="color:var(--danger);font-size:1rem;font-weight:700">✗ ${err.message}</p></div>`;
         resDiv.classList.remove('hidden');
       }
     };
 
-    // ── QUEUE ──
+    /* ── QUEUE ── */
     const loadQueue = async () => {
       try {
         const res = await api.get('/queue');
         if (!res.data.length) {
-          document.getElementById('queueList').innerHTML = '<div class="empty-state"><div class="icon">📋</div><h3>Queue is empty</h3><p>No verified orders in queue right now.</p></div>';
+          document.getElementById('queueList').innerHTML =
+            '<div class="empty-state"><div class="icon">🚦</div><h3>Queue is empty</h3><p>No verified orders waiting right now.</p></div>';
           return;
         }
-        document.getElementById('queueList').innerHTML = res.data.map(q=>`
-          <div class="queue-row">
-            <div class="queue-pos">#${q.queue_position}</div>
+        document.getElementById('queueList').innerHTML = res.data.map(q => `
+          <div class="queue-row" style="background:var(--surface);margin-bottom:.75rem;padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1.5rem;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);">
+            <div class="q-rank" style="font-size:1.8rem;font-weight:800;color:var(--ink);background:var(--surface-bg);width:64px;height:64px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);border:1px solid var(--border);">#${q.queue_position}</div>
             <div style="flex:1">
-              <div style="font-weight:600">Token #${q.order_id?.token_number}</div>
-              <div style="font-size:.8rem;color:var(--text-muted)">${q.user_id?.name || 'Student'}</div>
+              <div class="q-student" style="font-weight:800;font-size:1.1rem;">${q.user_id?.name || 'Student'}</div>
+              <div class="q-token" style="font-size:.9rem;color:var(--ink-dim);font-weight:600;margin-top:.2rem;">Token #${q.order_id?.token_number}</div>
             </div>
-            <span class="badge ${q.status==='preparing'?'badge-warning':'badge-primary'}">${q.status}</span>
+            <span class="badge ${q.status === 'preparing' ? 'badge-warning' : 'badge-primary'}" style="font-size:.85rem">${q.status}</span>
           </div>`).join('');
       } catch (err) { toast('Failed to load queue: ' + err.message, 'error'); }
     };
 
-    // ── AVAILABILITY ──
-    let menuForAvail = [];
+    /* ── AVAILABILITY ── */
     const loadAvailability = async () => {
       try {
         const res = await api.get('/menu');
-        menuForAvail = res.data;
-        document.getElementById('availabilityList').innerHTML = res.data.map(item=>`
+        document.getElementById('availabilityList').innerHTML = res.data.map(item => `
           <div class="avail-row">
             <div>
               <div class="avail-name">${item.item_name}</div>
-              <div class="avail-price">₹${item.price} • ${item.category}</div>
+              <div class="avail-meta">₹${item.price} &nbsp;·&nbsp; ${item.category}</div>
             </div>
             <label class="toggle" title="Toggle availability">
-              <input type="checkbox" ${item.availability?'checked':''} onchange="toggleAvail('${item._id}',this.checked)"/>
+              <input type="checkbox" ${item.availability ? 'checked' : ''} onchange="toggleAvail('${item._id}',this.checked)"/>
               <span class="toggle-slider"></span>
             </label>
           </div>`).join('');
-      } catch (err) { toast('Failed to load availability: ' + err.message, 'error'); }
+      } catch (err) { toast('Failed to load availability.', 'error'); }
     };
 
     const toggleAvail = async (itemId, availability) => {
@@ -278,41 +626,88 @@
       } catch (err) { toast(err.message, 'error'); loadAvailability(); }
     };
 
-    // ── MENU MANAGEMENT ──
+    /* ── MENU MANAGEMENT ── */
     const loadMenuManage = async () => {
       try {
         const res = await api.get('/menu');
-        document.getElementById('menuManageList').innerHTML = res.data.map(item=>`
-          <div class="order-card">
-            <div class="order-card-header">
-              <div>
-                <strong>${item.item_name}</strong>
-                <span class="badge badge-primary" style="margin-left:.5rem">${item.category}</span>
-                <span class="badge ${item.availability?'badge-success':'badge-danger'}" style="margin-left:.3rem">${item.availability?'Available':'Unavailable'}</span>
-              </div>
-              <div style="display:flex;gap:.5rem">
-                <span style="color:var(--accent);font-weight:700">₹${item.price}</span>
-                <button class="btn btn-danger btn-sm" onclick="deleteItem('${item._id}','${item.item_name}')">🗑️</button>
-              </div>
+        if (!res.data.length) {
+          document.getElementById('menuManageList').innerHTML =
+            '<div class="empty-state"><div class="icon">🍽️</div><h3>No items yet</h3><p>Add your first menu item above.</p></div>';
+          return;
+        }
+        document.getElementById('menuManageList').innerHTML = res.data.map(item => `
+          <div class="manage-item">
+            <div class="manage-item-info">
+              <div class="manage-item-name">${item.item_name}</div>
+              <div class="manage-item-sub">${item.category} &nbsp;·&nbsp; ₹${item.price} &nbsp;·&nbsp; ${item.availability ? 'Available' : 'Unavailable'}</div>
             </div>
-            <p style="font-size:.85rem;color:var(--text-muted)">${item.description || '—'}</p>
+            <div class="manage-item-actions">
+              <span class="badge ${item.availability ? 'badge-success' : 'badge-danger'}">${item.availability ? 'Live' : 'Off'}</span>
+              <button class="btn btn-danger btn-sm" onclick="deleteItem('${item._id}','${item.item_name}')" style="box-shadow:none;">Delete</button>
+            </div>
           </div>`).join('');
-      } catch (err) { toast('Failed to load menu: ' + err.message, 'error'); }
+      } catch (err) { toast('Failed to load menu.', 'error'); }
     };
 
-    document.getElementById('menuForm').addEventListener('submit', async (e) => {
+    /* ── IMAGE SOURCE SWITCHER ── */
+    let activeImgTab = 'url';
+    let uploadedBase64 = '';
+
+    function switchImgTab(tab) {
+      activeImgTab = tab;
+      document.getElementById('imgTabUrl').classList.toggle('active',  tab === 'url');
+      document.getElementById('imgTabFile').classList.toggle('active', tab === 'file');
+      document.getElementById('imgPanelUrl').classList.toggle('active',  tab === 'url');
+      document.getElementById('imgPanelFile').classList.toggle('active', tab === 'file');
+    }
+
+    function previewUrlImage(url) {
+      const wrap = document.getElementById('urlPreviewWrap');
+      if (!url) {
+        wrap.innerHTML = '<span class="img-preview-placeholder">Image preview will appear here</span>';
+        return;
+      }
+      const img = new Image();
+      img.onload  = () => { wrap.innerHTML = ''; wrap.appendChild(img); };
+      img.onerror = () => { wrap.innerHTML = '<span class="img-preview-placeholder" style="color:var(--danger)">⚠ Could not load image</span>'; };
+      img.src = url;
+      img.style.cssText = 'max-height:180px;max-width:100%;object-fit:contain;border-radius:8px;';
+    }
+
+    function handleFileUpload(input) {
+      const file = input.files[0];
+      if (!file) return;
+      document.getElementById('mImgFileName').textContent = file.name;
+      const reader = new FileReader();
+      reader.onload = e => {
+        uploadedBase64 = e.target.result;
+        const wrap = document.getElementById('filePreviewWrap');
+        wrap.innerHTML = `<img src="${uploadedBase64}" style="max-height:180px;max-width:100%;object-fit:contain;border-radius:8px;"/>`;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    document.getElementById('menuForm').addEventListener('submit', async e => {
       e.preventDefault();
+      const imageVal = activeImgTab === 'file'
+        ? uploadedBase64
+        : document.getElementById('mImg').value.trim();
       try {
         await api.post('/menu', {
-          item_name: document.getElementById('mName').value,
-          price: parseFloat(document.getElementById('mPrice').value),
-          category: document.getElementById('mCategory').value,
+          item_name:   document.getElementById('mName').value,
+          price:       parseFloat(document.getElementById('mPrice').value),
+          category:    document.getElementById('mCategory').value,
           description: document.getElementById('mDesc').value,
-          image_url: document.getElementById('mImg').value,
-          prep_time: parseInt(document.getElementById('mPrep').value) || 10,
+          image_url:   imageVal,
+          prep_time:   parseInt(document.getElementById('mPrep').value) || 10,
         });
         toast('Menu item added!', 'success');
         e.target.reset();
+        uploadedBase64 = '';
+        document.getElementById('mImgFileName').textContent = '';
+        document.getElementById('filePreviewWrap').innerHTML = '<span class="img-preview-placeholder">Select a photo to preview</span>';
+        document.getElementById('urlPreviewWrap').innerHTML  = '<span class="img-preview-placeholder">Image preview will appear here</span>';
+        switchImgTab('url');
         loadMenuManage();
       } catch (err) { toast(err.message, 'error'); }
     });
@@ -323,7 +718,7 @@
       catch (err) { toast(err.message, 'error'); }
     };
 
-    // INIT
+    /* ── INIT ── */
     loadOrders();
     setInterval(loadOrders, 20000);
   </script>
