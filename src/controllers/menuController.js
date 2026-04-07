@@ -11,7 +11,13 @@ const getMenu = async (req, res, next) => {
 // POST /api/menu  (staff)
 const addMenuItem = async (req, res, next) => {
   try {
-    const item = await MenuItem.create(req.body);
+    const payload = { ...req.body };
+    if (payload.stock !== undefined && payload.stock !== null) {
+      payload.stock = Number(payload.stock);
+      if (isNaN(payload.stock) || payload.stock < 0) payload.stock = 0;
+      if (payload.stock === 0) payload.availability = false;
+    }
+    const item = await MenuItem.create(payload);
     res.status(201).json({ success: true, data: item });
   } catch (err) { next(err); }
 };
@@ -19,7 +25,16 @@ const addMenuItem = async (req, res, next) => {
 // PUT /api/menu/:id  (staff)
 const updateMenuItem = async (req, res, next) => {
   try {
-    const item = await MenuItem.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const payload = { ...req.body };
+    if (payload.stock !== undefined && payload.stock !== null) {
+      payload.stock = Number(payload.stock);
+      if (isNaN(payload.stock) || payload.stock < 0) payload.stock = 0;
+      if (payload.stock === 0) payload.availability = false;
+      if (payload.stock > 0 && payload.availability === undefined) {
+        payload.availability = true;
+      }
+    }
+    const item = await MenuItem.findByIdAndUpdate(req.params.id, payload, { new: true, runValidators: true });
     if (!item) return res.status(404).json({ success: false, message: 'Item not found.' });
     res.json({ success: true, data: item });
   } catch (err) { next(err); }

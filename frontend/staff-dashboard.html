@@ -365,6 +365,7 @@
               </select>
             </div>
             <div class="input-group"><label>Prep Time (mins)</label><input id="mPrep" type="number" class="input" placeholder="10" min="1"/></div>
+            <div class="input-group"><label>Stock Count</label><input id="mStock" type="number" class="input" placeholder="Leave blank for unlimited" min="0"/></div>
             <div class="input-group" style="grid-column:1/-1"><label>Description</label><input id="mDesc" class="input" placeholder="Short description…"/></div>
             <!-- Image source: URL or file upload -->
             <div class="input-group" style="grid-column:1/-1; margin-top:1rem;">
@@ -607,23 +608,37 @@
         const res = await api.get('/menu');
         document.getElementById('availabilityList').innerHTML = res.data.map(item => `
           <div class="avail-row">
-            <div>
+            <div style="flex:1; min-width:220px;">
               <div class="avail-name">${item.item_name}</div>
               <div class="avail-meta">₹${item.price} &nbsp;·&nbsp; ${item.category}</div>
             </div>
-            <label class="toggle" title="Toggle availability">
-              <input type="checkbox" ${item.availability ? 'checked' : ''} onchange="toggleAvail('${item._id}',this.checked)"/>
-              <span class="toggle-slider"></span>
-            </label>
+            <div style="display:flex;align-items:center;gap:.75rem;">
+              <input id="stock-${item._id}" type="number" min="0" class="input" value="${item.stock == null ? '' : item.stock}"
+                     placeholder="Unlimited" style="width:100px;" onchange="changeStock('${item._id}', this.value)" />
+              <label class="toggle" title="Toggle availability">
+                <input type="checkbox" ${item.availability ? 'checked' : ''} onchange="toggleAvail('${item._id}',this.checked)"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
           </div>`).join('');
       } catch (err) { toast('Failed to load availability.', 'error'); }
     };
 
-    const toggleAvail = async (itemId, availability) => {
+    const toggleAvail = async (itemId, availability, stock = undefined) => {
       try {
-        const res = await api.put('/availability/update', { item_id: itemId, availability });
+        const body = { item_id: itemId, availability };
+        if (stock !== undefined) body.stock = stock;
+        const res = await api.put('/availability/update', body);
         toast(res.message, availability ? 'success' : 'warning');
+        loadAvailability();
       } catch (err) { toast(err.message, 'error'); loadAvailability(); }
+    };
+
+    const changeStock = async (itemId, stockValue) => {
+      const parsedStock = stockValue === '' ? null : Number(stockValue);
+      const checkbox = document.querySelector(`#stock-${itemId}`)?.closest('.avail-row')?.querySelector('input[type="checkbox"]');
+      const availability = checkbox ? checkbox.checked : true;
+      toggleAvail(itemId, availability, parsedStock);
     };
 
     /* ── MENU MANAGEMENT ── */
@@ -639,7 +654,7 @@
           <div class="manage-item">
             <div class="manage-item-info">
               <div class="manage-item-name">${item.item_name}</div>
-              <div class="manage-item-sub">${item.category} &nbsp;·&nbsp; ₹${item.price} &nbsp;·&nbsp; ${item.availability ? 'Available' : 'Unavailable'}</div>
+              <div class="manage-item-sub">${item.category} &nbsp;·&nbsp; ₹${item.price} &nbsp;·&nbsp; ${item.availability ? 'Available' : 'Unavailable'} &nbsp;·&nbsp; Stock: ${item.stock == null ? 'Unlimited' : item.stock}</div>
             </div>
             <div class="manage-item-actions">
               <span class="badge ${item.availability ? 'badge-success' : 'badge-danger'}">${item.availability ? 'Live' : 'Off'}</span>
@@ -700,6 +715,7 @@
           description: document.getElementById('mDesc').value,
           image_url:   imageVal,
           prep_time:   parseInt(document.getElementById('mPrep').value) || 10,
+          stock:       document.getElementById('mStock').value === '' ? null : Number(document.getElementById('mStock').value),
         });
         toast('Menu item added!', 'success');
         e.target.reset();

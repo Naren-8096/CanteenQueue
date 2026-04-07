@@ -16,14 +16,34 @@ const createOrder = async (req, res, next) => {
 
     let total_price = 0;
     const enrichedItems = [];
+
     for (const item of items) {
       const menuItem = await MenuItem.findById(item.item_id);
       if (!menuItem || !menuItem.availability) {
         return res.status(400).json({ success: false, message: `${menuItem?.item_name || 'Item'} is not available.` });
       }
       const qty = item.quantity || 1;
+      if (menuItem.stock !== null && menuItem.stock !== undefined && menuItem.stock < qty) {
+        return res.status(400).json({
+          success: false,
+          message: `${menuItem.item_name} only has ${menuItem.stock} left.`,
+        });
+      }
       total_price += menuItem.price * qty;
       enrichedItems.push({ item_id: menuItem._id, item_name: menuItem.item_name, price: menuItem.price, quantity: qty });
+    }
+
+    for (const item of enrichedItems) {
+      if (item.quantity > 0) {
+        const menuItem = await MenuItem.findById(item.item_id);
+        if (menuItem.stock !== null && menuItem.stock !== undefined) {
+          const nextStock = Math.max(0, menuItem.stock - item.quantity);
+          await MenuItem.findByIdAndUpdate(item.item_id, {
+            stock: nextStock,
+            availability: nextStock > 0,
+          });
+        }
+      }
     }
 
     const otp_code = generateOTP();

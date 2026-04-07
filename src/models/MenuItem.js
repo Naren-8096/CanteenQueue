@@ -24,6 +24,11 @@ const menuItemSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  stock: {
+    type: Number,
+    default: null,
+    min: [0, 'Stock cannot be negative'],
+  },
   image_url: {
     type: String,
     default: '',

@@ -123,6 +123,21 @@
 
     /* Add to cart confirmation ripple  */
     .menu-card.just-added { animation: popIn .3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .menu-card { position: relative; overflow: hidden; }
+    .stock-badge {
+      position: absolute;
+      right: 1rem;
+      top: 1rem;
+      background: rgba(255,255,255,0.95);
+      color: var(--ink);
+      padding: .3rem .65rem;
+      border-radius: 999px;
+      font-size: .8rem;
+      font-weight: 800;
+      border: 1px solid rgba(15, 23, 42, .12);
+      box-shadow: 0 6px 20px rgba(15,23,42,.08);
+      z-index: 2;
+    }
     
     /* Responsive tweaks */
     @media(max-width: 1024px) {
@@ -329,9 +344,12 @@
               : `<div class="img-placeholder">${placeholder}</div>`}
           </div>`;
 
+        const stockLabel = item.stock == null ? '∞' : item.stock;
+        const stockBadge = `<div class="stock-badge">${stockLabel}</div>`;
         return `
         <div class="menu-card ${!item.availability ? 'unavailable' : ''}" id="mc-${item._id}"
              onclick="${item.availability ? `addToCart('${item._id}','${item.item_name}',${item.price})` : ''}">
+          ${stockBadge}
           ${imgHtml}
           <div class="menu-card-body">
             <div class="menu-card-name">${item.item_name}</div>
