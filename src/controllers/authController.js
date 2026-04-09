@@ -16,7 +16,8 @@ const register = async (req, res, next) => {
     }
 
     if (role === 'staff') {
-      if (!staffSecret || staffSecret !== process.env.STAFF_SECRET) {
+      const expectedSecret = (process.env.STAFF_SECRET || '').replace(/^["']|["']$/g, '').trim();
+      if (!staffSecret || staffSecret.trim() !== expectedSecret) {
         return res.status(403).json({ success: false, message: 'Invalid Staff Access Key. Please contact administration.' });
       }
     }
