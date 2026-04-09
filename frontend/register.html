@@ -48,13 +48,19 @@
             <label for="email">Email Address</label>
             <input id="email" type="email" class="input" placeholder="you@college.edu" required/>
           </div>
-          <div class="input-group">
-            <label for="phone">Phone Number</label>
-            <input id="phone" type="tel" class="input" placeholder="9876543210"/>
-          </div>
+
           <div class="input-group">
             <label for="password">Password</label>
-            <input id="password" type="password" class="input" placeholder="Min. 6 characters" required/>
+            <div style="position: relative;">
+              <input id="password" type="password" class="input" placeholder="Min. 6 characters" required style="padding-right: 2.5rem; width: 100%;"/>
+              <button type="button" id="togglePasswordBtn" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 1.1rem; padding: 0; display: flex; align-items: center; justify-content: center;">
+                <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-eye"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+          </div>
+          <div id="staffSecretGroup" class="input-group hidden">
+            <label for="staffSecret">Staff Access Key</label>
+            <input id="staffSecret" type="password" class="input" placeholder="Provided by Administration"/>
           </div>
           <input type="hidden" id="role"/>
           <div id="errorMsg" class="error-msg hidden"></div>
@@ -73,6 +79,21 @@
   <script>
     redirectIfLoggedIn();
 
+    const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+    const passwordInput = document.getElementById('password');
+    const eyeIcon = document.getElementById('eyeIcon');
+    if (togglePasswordBtn && passwordInput) {
+      togglePasswordBtn.addEventListener('click', () => {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        if (type === 'password') {
+          eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+        } else {
+          eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+        }
+      });
+    }
+
     let selectedRole = null;
     const selectRole = (role) => {
       selectedRole = role;
@@ -83,6 +104,14 @@
         `<span class="badge badge-primary">${role === 'staff' ? '👨‍🍳 Staff' : '🎓 Student'}</span>`;
       // Highlight selected card
       document.getElementById(`role${role.charAt(0).toUpperCase()+role.slice(1)}`).style.borderColor = 'var(--primary)';
+      
+      if (role === 'staff') {
+        document.getElementById('staffSecretGroup').classList.remove('hidden');
+        document.getElementById('staffSecret').setAttribute('required', 'true');
+      } else {
+        document.getElementById('staffSecretGroup').classList.add('hidden');
+        document.getElementById('staffSecret').removeAttribute('required');
+      }
     };
     const backToRole = () => {
       document.getElementById('roleSelection').classList.remove('hidden');
@@ -94,7 +123,7 @@
       const name     = document.getElementById('name').value.trim();
       const email    = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
-      const phone    = document.getElementById('phone').value.trim();
+      const staffSecret = document.getElementById('staffSecret') ? document.getElementById('staffSecret').value.trim() : undefined;
       const role     = document.getElementById('role').value;
       const errMsg   = document.getElementById('errorMsg');
       const btn      = document.getElementById('registerBtn');
@@ -105,7 +134,8 @@
       showLoading();
 
       try {
-        const res = await api.post('/auth/register', { name, email, password, phone, role });
+        const payload = role === 'staff' ? { name, email, password, role, staffSecret } : { name, email, password, role };
+        const res = await api.post('/auth/register', payload);
         saveAuth(res.token, res.user);
         toast('Account created successfully!', 'success');
         setTimeout(() => {
