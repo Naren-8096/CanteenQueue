@@ -162,4 +162,22 @@ const getAllOrders = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { createOrder, getOrderStatus, verifyOTP, updateOrderStatus, getMyOrders, getAllOrders };
+// GET /api/order/completed (staff)
+const getCompletedOrders = async (req, res, next) => {
+  try {
+    // Get start of today
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const orders = await Order.find({ 
+      order_status: { $in: ['Delivered', 'Cancelled'] },
+      updatedAt: { $gte: startOfToday } // Filter by today's date
+    })
+      .populate('user_id', 'name email')
+      .sort({ updatedAt: -1 }); // Recently completed first
+
+    res.json({ success: true, data: orders });
+  } catch (err) { next(err); }
+};
+
+module.exports = { createOrder, getOrderStatus, verifyOTP, updateOrderStatus, getMyOrders, getAllOrders, getCompletedOrders };

@@ -285,6 +285,7 @@
     <!-- ── TABS ── -->
     <div class="tab-nav">
       <button class="tab-btn active" data-tab="orders">📦 Live Orders</button>
+      <button class="tab-btn" data-tab="completed">✅ Completed Orders</button>
       <button class="tab-btn" data-tab="otp">🔑 OTP Verify</button>
       <button class="tab-btn" data-tab="queue">🚦 Live Queue</button>
       <button class="tab-btn" data-tab="availability">🍽️ Menu Availability</button>
@@ -299,6 +300,17 @@
       </div>
       <div id="ordersList">
         <div class="empty-state"><div class="icon">📋</div><h3>Loading orders…</h3></div>
+      </div>
+    </div>
+
+    <!-- ── COMPLETED ORDERS TAB ── -->
+    <div class="tab-content" id="tab-completed">
+      <div class="section-head">
+        <h3>Today's Completed Orders</h3>
+        <button class="btn btn-ghost" onclick="loadCompletedOrders()" style="font-weight:700">↻ Refresh List</button>
+      </div>
+      <div id="completedOrdersList">
+        <div class="empty-state"><div class="icon">✅</div><h3>Loading…</h3></div>
       </div>
     </div>
 
@@ -483,6 +495,10 @@
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+        
+        // Load data based on tab
+        if (btn.dataset.tab === 'orders')       loadOrders();
+        if (btn.dataset.tab === 'completed')    loadCompletedOrders();
         if (btn.dataset.tab === 'queue')        loadQueue();
         if (btn.dataset.tab === 'availability') loadAvailability();
         if (btn.dataset.tab === 'menu')         loadMenuManage();
@@ -545,8 +561,50 @@
       try {
         await api.put(`/order/status/${orderId}`, { status });
         toast(`Status updated to "${status}"`, 'success');
-        loadOrders();
+        
+        // Refresh whichever tab is active
+        const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+        if (activeTab === 'completed') {
+          loadCompletedOrders();
+          loadOrders(); // also fetch live orders in background to update counts
+        } else {
+          loadOrders();
+        }
       } catch (err) { toast(err.message, 'error'); }
+    };
+    
+    /* ── COMPLETED ORDERS ── */
+    const loadCompletedOrders = async () => {
+      try {
+        const res = await api.get('/order/completed');
+        const orders = res.data;
+
+        if (!orders.length) {
+          document.getElementById('completedOrdersList').innerHTML =
+            '<div class="empty-state"><div class="icon">✅</div><h3>No completed orders yet</h3><p>Orders marked as Delivered or Cancelled today will appear here.</p></div>';
+          return;
+        }
+
+        document.getElementById('completedOrdersList').innerHTML = orders.map(o => `
+          <div class="order-card" data-status="${o.order_status}" style="opacity: 0.85;">
+            <div class="order-header">
+              <div>
+                <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+                  <span class="order-token">#${o.token_number}</span>
+                  <span class="badge ${statusBadge(o.order_status)}" style="font-size:.8rem">${o.order_status}</span>
+                </div>
+                <div class="order-meta">Customer: <strong>${o.user_id?.name || 'Student'}</strong> &nbsp;·&nbsp; ₹${o.total_price} &nbsp;·&nbsp; ${new Date(o.updatedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
+              </div>
+              <div class="order-actions">
+                <select class="status-select" onchange="updateStatus('${o._id}', this.value)">
+                  ${['Ordered','OTP Verified','In Queue','Preparing','Delivered','Cancelled']
+                      .map(s => `<option ${o.order_status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <div class="order-items">${o.items.map(i => `<span>${i.item_name} × ${i.quantity}</span>`).join('')}</div>
+          </div>`).join('');
+      } catch (err) { toast('Failed to load completed orders.', 'error'); }
     };
 
     const quickVerifyOTP = orderId => {
