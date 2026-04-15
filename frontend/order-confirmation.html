@@ -109,7 +109,7 @@
     </div>
 
     <div class="card animate-fade-up" style="animation-delay:.4s">
-      <button class="btn btn-primary btn-full" id="refreshBtn" onclick="loadStatus()">🔄 Refresh Status</button>
+      <button class="btn btn-primary btn-full" id="refreshBtn" onclick="loadStatus(true)">🔄 Refresh Status</button>
       <p class="text-center mt-2" style="font-size:.8rem;color:var(--text-muted)">Auto-refreshes every 15 seconds</p>
     </div>
   </div>
@@ -123,8 +123,9 @@
     const orderId   = urlParams.get('order');
     const pending   = JSON.parse(localStorage.getItem('cq_pending_order') || 'null');
 
-    // Display token + OTP from localStorage (only shown once after payment)
-    if (pending) {
+    // Fallback: Display token + OTP from localStorage ONLY IF it matches the current order ID
+    // Otherwise, we wait for the API to provide the correct data
+    if (pending && pending.order_id === orderId) {
       document.getElementById('tokenDisplay').textContent = `#${pending.token}`;
       document.getElementById('otpDisplay').textContent = pending.otp;
     }
@@ -155,16 +156,28 @@
       document.getElementById('doneBadge').textContent = idx >= 4 ? '🎉 Delivered!' : '—';
       document.getElementById('doneBadge').style.opacity = idx >= 4 ? '1' : '.4';
       document.getElementById('doneBadge').className = `badge ${idx >= 4 ? 'badge-success' : ''}`;
+
+      if (status === 'Cancelled') {
+        document.getElementById('st-ordered').classList.add('done');
+        document.getElementById('otpBadge').textContent = 'Cancelled';
+        document.getElementById('otpBadge').className = 'badge badge-danger';
+        toast('This order has been cancelled.', 'warning');
+      }
     };
 
-    const loadStatus = async () => {
+    const loadStatus = async (isManual = false) => {
       if (!orderId) return;
       try {
         const res = await api.get(`/order/status/${orderId}`);
         const d = res.data;
-        if (!pending) {
-          document.getElementById('tokenDisplay').textContent = `#${d.token_number}`;
+        console.log(`Order ${orderId} Status:`, d.order_status);
+        
+        // Always update Token and OTP from the live API data
+        document.getElementById('tokenDisplay').textContent = `#${d.token_number}`;
+        if (d.otp_code) {
+          document.getElementById('otpDisplay').textContent = d.otp_code;
         }
+
         updateStatus(d.order_status, d.queue_position);
 
         // Load per-item queue positions
@@ -172,7 +185,10 @@
           const qRes = await api.get(`/queue/item-positions/${orderId}`);
           renderItemQueue(qRes.data);
         } catch (_) { /* not in queue yet — hide card */ }
-      } catch (err) { toast('Could not refresh status.', 'error'); }
+      } catch (err) { 
+        console.error('Refresh failed:', err);
+        if (isManual) toast('Could not refresh status.', 'error'); 
+      }
     };
 
     const renderItemQueue = (data) => {
@@ -206,7 +222,7 @@
 
     if (orderId) {
       loadStatus();
-      setInterval(loadStatus, 15000);
+      setInterval(loadStatus, 5000); // Poll every 5 seconds for "live" updates
     }
   </script>
 </body>

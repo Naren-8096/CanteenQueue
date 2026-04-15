@@ -239,6 +239,109 @@
       transition: transform .2s;
     }
     .modal-overlay.hidden .modal-content { transform: scale(0.95); }
+
+    /* ── BATCH BAR ── */
+    .batch-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      box-shadow: var(--shadow-sm);
+      position: sticky;
+      top: 1rem;
+      z-index: 100;
+      animation: slideDown 0.4s ease;
+    }
+    .batch-info { display: flex; align-items: center; gap: 1rem; font-weight: 700; color: var(--ink); }
+    .batch-actions-btns { display: flex; gap: .75rem; }
+
+    /* ── INLINE OTP ── */
+    .inline-otp {
+      display: flex;
+      gap: .5rem;
+      align-items: center;
+      background: var(--surface-bg);
+      padding: .4rem;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--border);
+    }
+    .inline-otp input {
+      width: 80px;
+      border: none;
+      background: transparent;
+      padding: .3rem .5rem;
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: .2em;
+      text-align: center;
+      outline: none;
+      color: var(--accent);
+    }
+
+    /* ── CHECKBOX ── */
+    .order-select-wrap {
+      display: flex;
+      align-items: center;
+      padding-right: 1.5rem;
+      border-right: 1px solid var(--border-light);
+      margin-right: 1.5rem;
+    }
+    .order-checkbox {
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* ── QUICK ACTION BTN ── */
+    .btn-quick {
+      min-width: 140px;
+      justify-content: center;
+      font-weight: 800;
+    }
+
+    /* ── QUICK VERIFY CARD (Ultra-Compact) ── */
+    .quick-verify-card {
+        background: var(--surface);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-lg);
+        padding: 1rem;
+        margin: 0 auto 2rem;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        max-width: 280px; /* Narrow width for minimal footprint */
+    }
+    .quick-verify-title {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: var(--ink-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .quick-verify-form {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+    }
+    .quick-verify-form .input {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.95rem;
+    }
   </style>
 </head>
 <body>
@@ -286,7 +389,6 @@
     <div class="tab-nav">
       <button class="tab-btn active" data-tab="orders">📦 Live Orders</button>
       <button class="tab-btn" data-tab="completed">✅ Completed Orders</button>
-      <button class="tab-btn" data-tab="otp">🔑 OTP Verify</button>
       <button class="tab-btn" data-tab="queue">🚦 Live Queue</button>
       <button class="tab-btn" data-tab="availability">🍽️ Menu Availability</button>
       <button class="tab-btn" data-tab="menu">✏️ Manage Menu</button>
@@ -294,10 +396,23 @@
 
     <!-- ── ORDERS TAB ── -->
     <div class="tab-content active" id="tab-orders">
+      <!-- QUICK VERIFY (ULTRA-COMPACT VERTICAL) -->
+      <div class="quick-verify-card">
+        <div class="quick-verify-title">Quick Verify</div>
+        <div class="quick-verify-form">
+          <input id="verifyOrderId" class="input" placeholder="Token #" type="number" min="1" style="font-weight:700;"/>
+          <input id="verifyOtp" class="input" maxlength="4" placeholder="4-Digit OTP"
+                 style="letter-spacing:.2em; font-size:1.05rem; font-weight:800; text-align:center; color:var(--accent);"/>
+          <button class="btn btn-primary btn-full btn-sm" onclick="verifyOTPAction()">Verify OTP</button>
+        </div>
+        <div id="otpResult" class="hidden" style="text-align:center; width: 100%; font-size: 0.85rem;"></div>
+      </div>
+
       <div class="section-head">
         <h3>Active Orders</h3>
-        <button class="btn btn-ghost" onclick="loadOrders()" style="font-weight:700">↻ Refresh List</button>
+        <button class="btn btn-ghost" onclick="loadOrders(true)" style="font-weight:700">↻ Refresh List</button>
       </div>
+
       <div id="ordersList">
         <div class="empty-state"><div class="icon">📋</div><h3>Loading orders…</h3></div>
       </div>
@@ -307,41 +422,19 @@
     <div class="tab-content" id="tab-completed">
       <div class="section-head">
         <h3>Today's Completed Orders</h3>
-        <button class="btn btn-ghost" onclick="loadCompletedOrders()" style="font-weight:700">↻ Refresh List</button>
+        <button class="btn btn-ghost" onclick="loadCompletedOrders(true)" style="font-weight:700">↻ Refresh List</button>
       </div>
       <div id="completedOrdersList">
         <div class="empty-state"><div class="icon">✅</div><h3>Loading…</h3></div>
       </div>
     </div>
 
-    <!-- ── OTP VERIFY TAB ── -->
-    <div class="tab-content" id="tab-otp">
-      <div class="section-head"><h3 style="text-align:center;width:100%">Verify Customer OTP</h3></div>
-      <div class="otp-card">
-        <div class="otp-row">
-          <div class="input-group">
-            <label>Token Number</label>
-            <input id="verifyOrderId" class="input" placeholder="e.g. 1004" type="number" min="1" style="font-size:1.1rem;font-weight:700"/>
-          </div>
-          <div class="input-group" style="max-width:160px">
-            <label>OTP (4 digits)</label>
-            <input id="verifyOtp" class="input" maxlength="4" placeholder="1234"
-                   style="letter-spacing:.4em;font-size:1.3rem;font-weight:800;text-align:center;color:var(--accent)"/>
-          </div>
-        </div>
-        <button class="btn btn-primary btn-full btn-lg" onclick="verifyOTPAction()">Verify OTP &amp; Assign Queue</button>
-        <div id="otpResult" class="mt-4 hidden" style="text-align:center"></div>
-      </div>
-      <div class="otp-hint">
-        <p>💡 Tip: Go to <strong>Live Orders</strong> tab → click <strong>Verify OTP</strong> on an order to auto-fill.</p>
-      </div>
-    </div>
 
     <!-- ── QUEUE TAB ── -->
     <div class="tab-content" id="tab-queue">
       <div class="section-head">
         <h3>Live Customer Queue</h3>
-        <button class="btn btn-ghost" onclick="loadQueue()" style="font-weight:700">↻ Refresh</button>
+        <button class="btn btn-ghost" onclick="loadQueue(true)" style="font-weight:700">↻ Refresh</button>
       </div>
       <div id="queueList">
         <div class="empty-state"><div class="icon">🚦</div><h3>Queue is empty</h3></div>
@@ -516,7 +609,7 @@
     }[s] || 'badge-neutral');
 
     /* ── ORDERS ── */
-    const loadOrders = async () => {
+    const loadOrders = async (isManual = false) => {
       try {
         const res    = await api.get('/order/all');
         const orders = res.data;
@@ -531,30 +624,75 @@
           return;
         }
 
-        document.getElementById('ordersList').innerHTML = orders.map(o => `
-          <div class="order-card" data-status="${o.order_status}">
+        document.getElementById('ordersList').innerHTML = orders.map(o => {
+          const isOrdered = o.order_status === 'Ordered';
+          const isInQueue = o.order_status === 'In Queue';
+          const isPreparing = o.order_status === 'Preparing';
+          
+          let nextActionBtn = '';
+          if (isOrdered && !o.otp_verified) {
+            nextActionBtn = `
+              <div class="inline-otp">
+                <input type="text" maxlength="4" placeholder="OTP" id="otp-${o._id}" onkeypress="if(event.key==='Enter') verifyOTPInline('${o._id}')">
+                <button class="btn btn-primary btn-sm" onclick="verifyOTPInline('${o._id}')">Verify</button>
+              </div>`;
+          } else if (o.otp_verified && (o.order_status === 'OTP Verified' || isInQueue)) {
+            nextActionBtn = `<button class="btn btn-warning btn-sm btn-quick" onclick="advanceStatus('${o._id}', 'Preparing')">🍳 Start Preparing</button>`;
+          } else if (isPreparing) {
+            nextActionBtn = `<button class="btn btn-success btn-sm btn-quick" onclick="advanceStatus('${o._id}', 'Delivered')">✅ Mark Delivered</button>`;
+          }
+
+          return `
+          <div class="order-card" data-status="${o.order_status}" id="order-${o._id}">
             <div class="order-header">
-              <div>
-                <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-                  <span class="order-token">#${o.token_number}</span>
-                  <span class="badge ${statusBadge(o.order_status)}" style="font-size:.8rem">${o.order_status}</span>
-                  ${!o.otp_verified ? `<span class="badge badge-warning animate-pulse" style="font-size:.8rem">OTP Needed</span>` : ''}
+              <div style="display:flex; align-items:center;">
+                <div>
+                  <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+                    <span class="order-token">#${o.token_number}</span>
+                    <span class="badge ${statusBadge(o.order_status)}" style="font-size:.8rem">${o.order_status}</span>
+                    ${!o.otp_verified ? `<span class="badge badge-warning animate-pulse" style="font-size:.8rem">OTP Needed</span>` : ''}
+                  </div>
+                  <div class="order-meta">Customer: <strong>${o.user_id?.name || 'Student'}</strong> &nbsp;·&nbsp; ₹${o.total_price} &nbsp;·&nbsp; ${new Date(o.createdAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
                 </div>
-                <div class="order-meta">Customer: <strong>${o.user_id?.name || 'Student'}</strong> &nbsp;·&nbsp; ₹${o.total_price} &nbsp;·&nbsp; ${new Date(o.createdAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
               </div>
               <div class="order-actions">
-                ${!o.otp_verified
-                  ? `<button class="btn btn-primary btn-sm" onclick="quickVerifyOTP('${o._id}')" style="box-shadow:none">Verify OTP</button>`
-                  : ''}
-                <select class="status-select" onchange="updateStatus('${o._id}', this.value)">
+                ${nextActionBtn}
+                <div style="width:1px; height:24px; background:var(--border-light); margin:0 .5rem"></div>
+                <select class="status-select" style="padding:.4rem .8rem; padding-right:2rem; font-size:.8rem" onchange="updateStatus('${o._id}', this.value)">
                   ${['Ordered','OTP Verified','In Queue','Preparing','Delivered','Cancelled']
                       .map(s => `<option ${o.order_status === s ? 'selected' : ''}>${s}</option>`).join('')}
                 </select>
               </div>
             </div>
             <div class="order-items">${o.items.map(i => `<span>${i.item_name} × ${i.quantity}</span>`).join('')}</div>
-          </div>`).join('');
-      } catch (err) { toast('Failed to load orders: ' + err.message, 'error'); }
+          </div>`;
+        }).join('');
+      } catch (err) { 
+        console.error('Refresh failed:', err);
+        if (isManual) toast('Failed to load orders: ' + err.message, 'error'); 
+      }
+    };
+
+    /* ── QUICK ACTIONS ── */
+    const verifyOTPInline = async (orderId) => {
+      const otp = document.getElementById(`otp-${orderId}`).value.trim();
+      if (!otp) return toast('Please enter OTP', 'warning');
+      try {
+        await api.post('/order/verify-otp', { order_id: orderId, otp });
+        toast('OTP Verified!', 'success');
+        loadOrders();
+      } catch (err) { toast(err.message, 'error'); }
+    };
+
+    const advanceStatus = async (orderId, status) => {
+      const card = document.getElementById(`order-${orderId}`);
+      if (card) {
+        card.style.transform = 'translateX(20px)';
+        card.style.opacity = '0';
+      }
+      setTimeout(async () => {
+        await updateStatus(orderId, status);
+      }, 300);
     };
 
     const updateStatus = async (orderId, status) => {
@@ -574,7 +712,7 @@
     };
     
     /* ── COMPLETED ORDERS ── */
-    const loadCompletedOrders = async () => {
+    const loadCompletedOrders = async (isManual = false) => {
       try {
         const res = await api.get('/order/completed');
         const orders = res.data;
@@ -604,16 +742,10 @@
             </div>
             <div class="order-items">${o.items.map(i => `<span>${i.item_name} × ${i.quantity}</span>`).join('')}</div>
           </div>`).join('');
-      } catch (err) { toast('Failed to load completed orders.', 'error'); }
-    };
-
-    const quickVerifyOTP = orderId => {
-      document.getElementById('verifyOrderId').value = orderId;
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      document.querySelector('[data-tab="otp"]').classList.add('active');
-      document.getElementById('tab-otp').classList.add('active');
-      document.getElementById('verifyOtp').focus();
+      } catch (err) { 
+        console.error('Refresh failed:', err);
+        if (isManual) toast('Failed to load completed orders.', 'error'); 
+      }
     };
 
     /* ── OTP VERIFY ── */
@@ -621,18 +753,21 @@
       const orderId = document.getElementById('verifyOrderId').value.trim();
       const otp     = document.getElementById('verifyOtp').value.trim();
       const resDiv  = document.getElementById('otpResult');
-      if (!orderId || !otp) { toast('Enter Order ID and OTP.', 'error'); return; }
+      if (!orderId || !otp) { toast('Enter Token Number and OTP.', 'error'); return; }
       try {
         const res = await api.post('/order/verify-otp', { order_id: orderId, otp });
         resDiv.innerHTML = `
           <div style="background:var(--success-soft);border:1px solid var(--success);border-radius:var(--radius);padding:1.5rem;">
             <div style="color:var(--success);font-weight:800;font-size:1.2rem;margin-bottom:.5rem">✓ OTP Verified Successfully</div>
             <p style="font-size:1rem;color:var(--ink)">Queue position: <strong style="font-size:1.2rem">#${res.data.queue_position}</strong> &nbsp;|&nbsp; Token: <strong style="font-size:1.2rem">#${res.data.token_number}</strong></p>
+            <div style="color:var(--accent); font-weight:700; margin-top:0.5rem">${res.message}</div>
           </div>`;
         resDiv.classList.remove('hidden');
         document.getElementById('verifyOrderId').value = '';
         document.getElementById('verifyOtp').value = '';
         loadOrders();
+        // Hide result after 5 seconds
+        setTimeout(() => resDiv.classList.add('hidden'), 5000);
       } catch (err) {
         resDiv.innerHTML = `<div style="background:var(--danger-soft);border:1px solid var(--danger);border-radius:var(--radius);padding:1.5rem;"><p style="color:var(--danger);font-size:1rem;font-weight:700">✗ ${err.message}</p></div>`;
         resDiv.classList.remove('hidden');
@@ -640,7 +775,7 @@
     };
 
     /* ── QUEUE ── */
-    const loadQueue = async () => {
+    const loadQueue = async (isManual = false) => {
       try {
         const res = await api.get('/queue');
         if (!res.data.length) {
@@ -657,7 +792,10 @@
             </div>
             <span class="badge ${q.status === 'preparing' ? 'badge-warning' : 'badge-primary'}" style="font-size:.85rem">${q.status}</span>
           </div>`).join('');
-      } catch (err) { toast('Failed to load queue: ' + err.message, 'error'); }
+      } catch (err) { 
+        console.error('Refresh failed:', err);
+        if (isManual) toast('Failed to load queue: ' + err.message, 'error'); 
+      }
     };
 
     /* ── AVAILABILITY ── */

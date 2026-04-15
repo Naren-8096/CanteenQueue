@@ -72,17 +72,25 @@ const createOrder = async (req, res, next) => {
 // GET /api/order/status/:id
 const getOrderStatus = async (req, res, next) => {
   try {
-    const order = await Order.findById(req.params.id).populate('user_id', 'name email');
+    const order = await Order.findById(req.params.id)
+      .populate('user_id', 'name email')
+      .select('+otp_code'); // Include OTP code
     if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
-    if (order.user_id._id.toString() !== req.user._id.toString() && req.user.role !== 'staff') {
+    
+    const isOwner = order.user_id._id.toString() === req.user._id.toString();
+    const isStaff = req.user.role === 'staff';
+
+    if (!isOwner && !isStaff) {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
+
     const queueRecord = await QueueRecord.findOne({ order_id: order._id });
     res.json({
       success: true,
       data: {
         order_id: order._id,
         token_number: order.token_number,
+        otp_code: isOwner ? order.otp_code : undefined, // Only show OTP to owner
         items: order.items,
         total_price: order.total_price,
         order_status: order.order_status,
@@ -116,12 +124,20 @@ const verifyOTP = async (req, res, next) => {
     order.otp_verified = true;
     order.queue_position = queuePosition;
     order.order_status = 'In Queue';
+
+    // Auto-advance to Preparing if nothing else is being prepared
+    const currentPreparing = await QueueRecord.findOne({ status: 'preparing' });
+    if (!currentPreparing) {
+      order.order_status = 'Preparing';
+      await QueueRecord.findOneAndUpdate({ order_id: order._id }, { status: 'preparing' });
+    }
+
     await order.save();
 
     res.json({
       success: true,
-      message: 'OTP verified! Order added to queue.',
-      data: { order_id: order._id, token_number: order.token_number, queue_position: queuePosition },
+      message: order.order_status === 'Preparing' ? 'OTP verified! Kitchen started preparing.' : 'OTP verified! Added to queue.',
+      data: { order_id: order._id, token_number: order.token_number, queue_position: queuePosition, status: order.order_status },
     });
   } catch (err) { next(err); }
 };
@@ -138,9 +154,52 @@ const updateOrderStatus = async (req, res, next) => {
 
     // Update queue record status
     if (status === 'Preparing') await QueueRecord.findOneAndUpdate({ order_id: order._id }, { status: 'preparing' });
-    else if (status === 'Delivered') await QueueRecord.findOneAndUpdate({ order_id: order._id }, { status: 'done' });
+    else if (status === 'Delivered' || status === 'Cancelled') {
+      await QueueRecord.findOneAndUpdate({ order_id: order._id }, { status: status === 'Delivered' ? 'done' : 'cancelled' });
+      
+      // Auto-advance the NEXT order in line to Preparing
+      const nextInLine = await QueueRecord.findOne({ status: 'waiting' }).sort({ queue_position: 1 });
+      if (nextInLine) {
+        nextInLine.status = 'preparing';
+        await nextInLine.save();
+        await Order.findByIdAndUpdate(nextInLine.order_id, { order_status: 'Preparing' });
+      }
+    }
 
     res.json({ success: true, data: order });
+  } catch (err) { next(err); }
+};
+
+// PUT /api/batch-status (staff)
+const batchUpdateStatus = async (req, res, next) => {
+  try {
+    const { orderIds, status } = req.body;
+    const validStatuses = ['Ordered', 'OTP Verified', 'In Queue', 'Preparing', 'Delivered', 'Cancelled'];
+    if (!validStatuses.includes(status)) return res.status(400).json({ success: false, message: 'Invalid status.' });
+    if (!Array.isArray(orderIds) || orderIds.length === 0) return res.status(400).json({ success: false, message: 'No orders selected.' });
+
+    // Update orders
+    await Order.updateMany({ _id: { $in: orderIds } }, { order_status: status });
+
+    // Update queue records
+    if (status === 'Preparing') {
+      await QueueRecord.updateMany({ order_id: { $in: orderIds } }, { status: 'preparing' });
+    } else if (status === 'Delivered' || status === 'Cancelled') {
+      await QueueRecord.updateMany({ order_id: { $in: orderIds } }, { status: status === 'Delivered' ? 'done' : 'cancelled' });
+
+      // If everything currently preparing is now done, start the next one
+      const stillPreparing = await QueueRecord.findOne({ status: 'preparing' });
+      if (!stillPreparing) {
+        const nextInLine = await QueueRecord.findOne({ status: 'waiting' }).sort({ queue_position: 1 });
+        if (nextInLine) {
+          nextInLine.status = 'preparing';
+          await nextInLine.save();
+          await Order.findByIdAndUpdate(nextInLine.order_id, { order_status: 'Preparing' });
+        }
+      }
+    }
+
+    res.json({ success: true, message: `Updated ${orderIds.length} orders to "${status}"` });
   } catch (err) { next(err); }
 };
 
@@ -155,7 +214,10 @@ const getMyOrders = async (req, res, next) => {
 // GET /api/order/all  (staff)
 const getAllOrders = async (req, res, next) => {
   try {
-    const orders = await Order.find({ order_status: { $nin: ['Delivered', 'Cancelled'] } })
+    const orders = await Order.find({ 
+      order_status: { $nin: ['Delivered', 'Cancelled'] },
+      payment_status: 'paid' // Only show paid orders
+    })
       .populate('user_id', 'name email')
       .sort({ createdAt: 1 });
     res.json({ success: true, data: orders });
@@ -171,6 +233,7 @@ const getCompletedOrders = async (req, res, next) => {
 
     const orders = await Order.find({ 
       order_status: { $in: ['Delivered', 'Cancelled'] },
+      payment_status: 'paid', // Only show paid orders
       updatedAt: { $gte: startOfToday } // Filter by today's date
     })
       .populate('user_id', 'name email')
@@ -180,4 +243,4 @@ const getCompletedOrders = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { createOrder, getOrderStatus, verifyOTP, updateOrderStatus, getMyOrders, getAllOrders, getCompletedOrders };
+module.exports = { createOrder, getOrderStatus, verifyOTP, updateOrderStatus, batchUpdateStatus, getMyOrders, getAllOrders, getCompletedOrders };
