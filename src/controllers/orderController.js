@@ -54,6 +54,21 @@ const createOrder = async (req, res, next) => {
       otp_code,
     });
 
+    const currentPreparing = await QueueRecord.findOne({ status: 'preparing' });
+    const queuePosition = await QueueRecord.countDocuments({ status: { $in: ['waiting', 'preparing'] } }) + 1;
+    const initialQueueStatus = currentPreparing ? 'waiting' : 'preparing';
+
+    await QueueRecord.create({
+      order_id: order._id,
+      user_id: order.user_id,
+      queue_position: queuePosition,
+      status: initialQueueStatus,
+    });
+
+    order.queue_position = queuePosition;
+    order.order_status = initialQueueStatus === 'preparing' ? 'Preparing' : 'In Queue';
+    await order.save();
+
     res.status(201).json({
       success: true,
       message: 'Order created! Complete payment to confirm.',
@@ -116,28 +131,13 @@ const verifyOTP = async (req, res, next) => {
     if (order.otp_verified) return res.status(400).json({ success: false, message: 'OTP already verified.' });
     if (order.otp_code !== otp) return res.status(400).json({ success: false, message: 'Invalid OTP.' });
 
-    // Count already verified orders for queue position (FIFO)
-    const verifiedCount = await QueueRecord.countDocuments({ status: { $in: ['waiting', 'preparing'] } });
-    const queuePosition = verifiedCount + 1;
-
-    await QueueRecord.create({ order_id: order._id, user_id: order.user_id, queue_position: queuePosition });
     order.otp_verified = true;
-    order.queue_position = queuePosition;
-    order.order_status = 'In Queue';
-
-    // Auto-advance to Preparing if nothing else is being prepared
-    const currentPreparing = await QueueRecord.findOne({ status: 'preparing' });
-    if (!currentPreparing) {
-      order.order_status = 'Preparing';
-      await QueueRecord.findOneAndUpdate({ order_id: order._id }, { status: 'preparing' });
-    }
-
     await order.save();
 
     res.json({
       success: true,
-      message: order.order_status === 'Preparing' ? 'OTP verified! Kitchen started preparing.' : 'OTP verified! Added to queue.',
-      data: { order_id: order._id, token_number: order.token_number, queue_position: queuePosition, status: order.order_status },
+      message: 'OTP verified successfully.',
+      data: { order_id: order._id, token_number: order.token_number, queue_position: order.queue_position, status: order.order_status },
     });
   } catch (err) { next(err); }
 };
