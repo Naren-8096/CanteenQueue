@@ -130,32 +130,35 @@
       document.getElementById('otpDisplay').textContent = pending.otp;
     }
 
-    const updateStatus = (status, queuePos) => {
-      const statuses = ['Ordered', 'OTP Verified', 'In Queue', 'Preparing', 'Delivered'];
-      const idx = statuses.indexOf(status);
+    const updateStatus = (status, queuePos, otpVerified = false) => {
+      const isInQueue = status === 'In Queue';
+      const isPreparing = status === 'Preparing';
+      const isDelivered = status === 'Delivered';
+      const isOtpPending = !otpVerified;
 
-      document.getElementById('st-ordered').classList.toggle('done', idx >= 0);
-      document.getElementById('st-otp').classList.toggle('done', idx >= 1);
-      document.getElementById('st-otp').classList.toggle('active', idx === 1);
-      document.getElementById('otpBadge').textContent = idx >= 1 ? '✓ Verified' : 'Pending';
-      document.getElementById('otpBadge').className = `badge ${idx >= 1 ? 'badge-success' : 'badge-warning'}`;
+      document.getElementById('st-ordered').classList.add('done');
 
-      document.getElementById('st-queue').classList.toggle('done', idx >= 2);
-      document.getElementById('st-queue').classList.toggle('active', idx === 2);
+      document.getElementById('st-otp').classList.toggle('done', otpVerified);
+      document.getElementById('st-otp').classList.toggle('active', status === 'OTP Verified');
+      document.getElementById('otpBadge').textContent = otpVerified ? '✓ Verified' : (status === 'Cancelled' ? 'Cancelled' : 'Pending');
+      document.getElementById('otpBadge').className = `badge ${otpVerified ? 'badge-success' : status === 'Cancelled' ? 'badge-danger' : 'badge-warning'}`;
+
+      document.getElementById('st-queue').classList.toggle('done', isInQueue || isPreparing || isDelivered);
+      document.getElementById('st-queue').classList.toggle('active', isInQueue);
       document.getElementById('queuePos').textContent = queuePos !== null ? `#${queuePos}` : '—';
-      document.getElementById('queueBadge').textContent = idx >= 2 ? (idx > 2 ? '✓ Done' : `#${queuePos}`) : 'Waiting';
-      document.getElementById('queueBadge').className = `badge ${idx >= 2 ? 'badge-success' : 'badge-primary'}`;
+      document.getElementById('queueBadge').textContent = isDelivered ? '✓ Done' : (queuePos !== null ? `#${queuePos}` : 'Waiting');
+      document.getElementById('queueBadge').className = `badge ${isDelivered ? 'badge-success' : 'badge-primary'}`;
 
-      document.getElementById('st-prep').classList.toggle('done', idx >= 3);
-      document.getElementById('st-prep').classList.toggle('active', idx === 3);
-      document.getElementById('prepBadge').textContent = idx >= 3 ? (idx > 3 ? '✓ Done' : '🍳 Cooking') : '—';
-      document.getElementById('prepBadge').style.opacity = idx >= 3 ? '1' : '.4';
-      document.getElementById('prepBadge').className = `badge ${idx >= 3 ? 'badge-warning' : ''}`;
+      document.getElementById('st-prep').classList.toggle('done', isDelivered);
+      document.getElementById('st-prep').classList.toggle('active', isPreparing);
+      document.getElementById('prepBadge').textContent = isPreparing ? '🍳 Cooking' : isDelivered ? '✓ Done' : '—';
+      document.getElementById('prepBadge').style.opacity = isPreparing || isDelivered ? '1' : '.4';
+      document.getElementById('prepBadge').className = `badge ${isPreparing ? 'badge-warning' : isDelivered ? 'badge-success' : ''}`;
 
-      document.getElementById('st-done').classList.toggle('done', idx >= 4);
-      document.getElementById('doneBadge').textContent = idx >= 4 ? '🎉 Delivered!' : '—';
-      document.getElementById('doneBadge').style.opacity = idx >= 4 ? '1' : '.4';
-      document.getElementById('doneBadge').className = `badge ${idx >= 4 ? 'badge-success' : ''}`;
+      document.getElementById('st-done').classList.toggle('done', isDelivered);
+      document.getElementById('doneBadge').textContent = isDelivered ? '🎉 Delivered!' : '—';
+      document.getElementById('doneBadge').style.opacity = isDelivered ? '1' : '.4';
+      document.getElementById('doneBadge').className = `badge ${isDelivered ? 'badge-success' : ''}`;
 
       if (status === 'Cancelled') {
         document.getElementById('st-ordered').classList.add('done');
@@ -178,7 +181,7 @@
           document.getElementById('otpDisplay').textContent = d.otp_code;
         }
 
-        updateStatus(d.order_status, d.queue_position);
+        updateStatus(d.order_status, d.queue_position, d.otp_verified);
 
         // Load per-item queue positions
         try {

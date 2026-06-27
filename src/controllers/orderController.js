@@ -66,7 +66,6 @@ const createOrder = async (req, res, next) => {
     });
 
     order.queue_position = queuePosition;
-    order.order_status = initialQueueStatus === 'preparing' ? 'Preparing' : 'In Queue';
     await order.save();
 
     res.status(201).json({
