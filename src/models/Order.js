@@ -23,6 +23,9 @@ const orderSchema = new mongoose.Schema({
   payment_id: { type: String, default: null },
   payment_status: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
   razorpay_order_id: { type: String, default: null },
+  feedback_rating: { type: Number, min: 1, max: 5, default: null },
+  feedback_text: { type: String, default: '' },
+  feedback_submitted: { type: Boolean, default: false },
 }, { timestamps: true });
 
 // Auto-assign token number before saving

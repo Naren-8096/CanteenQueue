@@ -6,6 +6,31 @@ const crypto = require('crypto');
 // Generate 4-digit OTP
 const generateOTP = () => Math.floor(1000 + Math.random() * 9000).toString();
 
+const markOrderPreparing = async (order) => {
+  await Order.findByIdAndUpdate(order._id, { order_status: 'Preparing' });
+  const queueRecord = await QueueRecord.findOne({ order_id: order._id });
+  if (queueRecord) {
+    queueRecord.status = 'preparing';
+    await queueRecord.save();
+  } else {
+    await QueueRecord.create({
+      order_id: order._id,
+      user_id: order.user_id,
+      queue_position: order.queue_position || null,
+      status: 'preparing',
+    });
+  }
+};
+
+const markOrderDelivered = async (order) => {
+  await Order.findByIdAndUpdate(order._id, { order_status: 'Delivered', otp_verified: true });
+  const queueRecord = await QueueRecord.findOne({ order_id: order._id });
+  if (queueRecord) {
+    queueRecord.status = 'done';
+    await queueRecord.save();
+  }
+};
+
 // POST /api/order/create
 const createOrder = async (req, res, next) => {
   try {
@@ -131,6 +156,9 @@ const verifyOTP = async (req, res, next) => {
     if (order.otp_code !== otp) return res.status(400).json({ success: false, message: 'Invalid OTP.' });
 
     order.otp_verified = true;
+    if (order.order_status === 'Ordered') {
+      order.order_status = 'OTP Verified';
+    }
     await order.save();
 
     res.json({
@@ -242,4 +270,68 @@ const getCompletedOrders = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { createOrder, getOrderStatus, verifyOTP, updateOrderStatus, batchUpdateStatus, getMyOrders, getAllOrders, getCompletedOrders };
+// POST /api/order/confirm-pickup
+const confirmPickup = async (req, res, next) => {
+  try {
+    const { order_id, otp } = req.body;
+    const isTokenNumber = /^\d+$/.test(String(order_id));
+    const order = isTokenNumber
+      ? await Order.findOne({ token_number: Number(order_id) }).select('+otp_code')
+      : await Order.findById(order_id).select('+otp_code');
+
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
+    if (order.user_id.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Access denied.' });
+    }
+    if (order.payment_status !== 'paid') {
+      return res.status(400).json({ success: false, message: 'Payment must be completed before pickup.' });
+    }
+    if (order.order_status === 'Delivered') {
+      return res.status(400).json({ success: false, message: 'This order has already been collected.' });
+    }
+    if (order.otp_code !== otp) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP.' });
+    }
+
+    order.otp_verified = true;
+    await markOrderDelivered(order);
+
+    res.json({
+      success: true,
+      message: 'Pickup confirmed. Enjoy your meal!',
+      data: { order_id: order._id, token_number: order.token_number, order_status: 'Delivered' },
+    });
+  } catch (err) { next(err); }
+};
+
+// POST /api/order/feedback/:id
+const submitFeedback = async (req, res, next) => {
+  try {
+    const { rating, feedback } = req.body;
+    const order = await Order.findById(req.params.id);
+
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
+    if (order.user_id.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Access denied.' });
+    }
+    if (order.order_status !== 'Delivered') {
+      return res.status(400).json({ success: false, message: 'Feedback is only available after delivery.' });
+    }
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5.' });
+    }
+
+    order.feedback_rating = rating;
+    order.feedback_text = feedback || '';
+    order.feedback_submitted = true;
+    await order.save();
+
+    res.json({
+      success: true,
+      message: 'Feedback submitted successfully.',
+      data: { order_id: order._id, rating, feedback: order.feedback_text },
+    });
+  } catch (err) { next(err); }
+};
+
+module.exports = { createOrder, getOrderStatus, verifyOTP, updateOrderStatus, batchUpdateStatus, getMyOrders, getAllOrders, getCompletedOrders, confirmPickup, submitFeedback };

@@ -630,7 +630,7 @@
           const isPreparing = o.order_status === 'Preparing';
           
           let nextActionBtn = '';
-          if (isOrdered && !o.otp_verified) {
+          if (!o.otp_verified && !['Delivered','Cancelled'].includes(o.order_status)) {
             nextActionBtn = `
               <div class="inline-otp">
                 <input type="text" maxlength="4" placeholder="OTP" id="otp-${o._id}" onkeypress="if(event.key==='Enter') verifyOTPInline('${o._id}')">
