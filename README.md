@@ -52,22 +52,25 @@ Your `.env` should look like this:
 ```env
 PORT=3000
 MONGO_URI=mongodb://localhost:27017/canteenqueue
-JWT_SECRET=canteenqueue_super_secret_jwt_key_2026
+JWT_SECRET=your_super_secret_jwt_key_here
 JWT_EXPIRES_IN=7d
-SESSION_SECRET=canteenqueue_session_secret_key_2026
+SESSION_SECRET=your_session_secret_key_here
 NODE_ENV=development
 
+# Payment Mode: 'mock' for built-in test payment modal, or 'real' to use Razorpay API
+PAYMENT_MODE=mock
+
 # Razorpay Payment Configuration (Test Mode)
-RAZORPAY_KEY_ID=rzp_test_XXXXXXXXXXXXXXXX
-RAZORPAY_KEY_SECRET=XXXXXXXXXXXXXXXXXXXXXXXX
+RAZORPAY_KEY_ID=your_razorpay_key_id_here
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret_here
 
 # Staff Registration Secret
-STAFF_SECRET=x9Pq2!mK#8vL$5wNz@7rY*4cT^1bJ&0dF
+STAFF_SECRET=your_staff_secret_key_here
 
-# Primary Admin Account Configuration
+# Primary Admin Account Configuration (Initial Setup)
 ADMIN_NAME=Canteen Administrator
 ADMIN_EMAIL=admin@canteen.com
-ADMIN_PASSWORD=admin123
+ADMIN_PASSWORD=your_secure_admin_password
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID=your_google_client_id_here
