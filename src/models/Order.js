@@ -17,8 +17,8 @@ const orderSchema = new mongoose.Schema({
   queue_position: { type: Number, default: null },
   order_status: {
     type: String,
-    enum: ['Ordered', 'OTP Verified', 'In Queue', 'Preparing', 'Delivered', 'Cancelled'],
-    default: 'Ordered',
+    enum: ['Ordered', 'In Queue', 'Preparing', 'Ready for Pickup', 'OTP Verified', 'Delivered', 'Cancelled'],
+    default: 'In Queue',
   },
   payment_id: { type: String, default: null },
   payment_status: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
@@ -36,5 +36,9 @@ orderSchema.pre('save', async function (next) {
   }
   next();
 });
+
+orderSchema.index({ order_status: 1, createdAt: -1 });
+orderSchema.index({ user_id: 1, createdAt: -1 });
+orderSchema.index({ token_number: 1 });
 
 module.exports = mongoose.model('Order', orderSchema);

@@ -93,6 +93,9 @@ const createOrder = async (req, res, next) => {
     order.queue_position = queuePosition;
     await order.save();
 
+    // Automatically advance kitchen slots if available
+    await syncAutoPipeline();
+
     res.status(201).json({
       success: true,
       message: 'Order created! Complete payment to confirm.',
@@ -115,11 +118,11 @@ const getOrderStatus = async (req, res, next) => {
       .populate('user_id', 'name email')
       .select('+otp_code'); // Include OTP code
     if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
-    
-    const isOwner = order.user_id._id.toString() === req.user._id.toString();
-    const isStaff = req.user.role === 'staff';
 
-    if (!isOwner && !isStaff) {
+    const isOwner = order.user_id._id.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'staff';
+
+    if (!isOwner && !isAdmin) {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
@@ -142,6 +145,32 @@ const getOrderStatus = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const KITCHEN_CAPACITY = 4; // Top 4 orders automatically in preparation
+
+// Automatically maintains the cooking pipeline
+const syncAutoPipeline = async () => {
+  try {
+    const currentActiveCount = await Order.countDocuments({
+      order_status: { $in: ['Preparing', 'Ready for Pickup'] },
+    });
+    const slotsAvailable = Math.max(0, KITCHEN_CAPACITY - currentActiveCount);
+
+    if (slotsAvailable > 0) {
+      const waitingQueueRecords = await QueueRecord.find({ status: 'waiting' })
+        .sort({ queue_position: 1, createdAt: 1 })
+        .limit(slotsAvailable);
+
+      for (const qr of waitingQueueRecords) {
+        qr.status = 'preparing';
+        await qr.save();
+        await Order.findByIdAndUpdate(qr.order_id, { order_status: 'Preparing' });
+      }
+    }
+  } catch (err) {
+    console.error('syncAutoPipeline error:', err);
+  }
+};
+
 // POST /api/order/verify-otp  (staff)
 const verifyOTP = async (req, res, next) => {
   try {
@@ -152,19 +181,25 @@ const verifyOTP = async (req, res, next) => {
       ? await Order.findOne({ token_number: Number(order_id) }).select('+otp_code')
       : await Order.findById(order_id).select('+otp_code');
     if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
-    if (order.otp_verified) return res.status(400).json({ success: false, message: 'OTP already verified.' });
-    if (order.otp_code !== otp) return res.status(400).json({ success: false, message: 'Invalid OTP.' });
+    if (order.otp_verified || order.order_status === 'Delivered') {
+      return res.status(400).json({ success: false, message: 'Order is already delivered & verified.' });
+    }
+    if (order.otp_code !== otp) return res.status(400).json({ success: false, message: 'Invalid OTP code.' });
 
     order.otp_verified = true;
-    if (order.order_status === 'Ordered') {
-      order.order_status = 'OTP Verified';
-    }
+    order.order_status = 'Delivered';
     await order.save();
+
+    // Mark queue record as done
+    await QueueRecord.findOneAndUpdate({ order_id: order._id }, { status: 'done' });
+
+    // Auto-advance the next waiting order into preparation!
+    await syncAutoPipeline();
 
     res.json({
       success: true,
-      message: 'OTP verified successfully.',
-      data: { order_id: order._id, token_number: order.token_number, queue_position: order.queue_position, status: order.order_status },
+      message: `Token #${order.token_number} verified and delivered!`,
+      data: { order_id: order._id, token_number: order.token_number, queue_position: order.queue_position, status: 'Delivered' },
     });
   } catch (err) { next(err); }
 };
@@ -173,24 +208,22 @@ const verifyOTP = async (req, res, next) => {
 const updateOrderStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
-    const validStatuses = ['Ordered', 'OTP Verified', 'In Queue', 'Preparing', 'Delivered', 'Cancelled'];
+    const validStatuses = ['In Queue', 'Preparing', 'Ready for Pickup', 'Delivered', 'Cancelled', 'Ordered', 'OTP Verified'];
     if (!validStatuses.includes(status)) return res.status(400).json({ success: false, message: 'Invalid status.' });
 
     const order = await Order.findByIdAndUpdate(req.params.id, { order_status: status }, { new: true });
     if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
 
     // Update queue record status
-    if (status === 'Preparing') await QueueRecord.findOneAndUpdate({ order_id: order._id }, { status: 'preparing' });
-    else if (status === 'Delivered' || status === 'Cancelled') {
+    if (status === 'Preparing') {
+      await QueueRecord.findOneAndUpdate({ order_id: order._id }, { status: 'preparing' });
+    } else if (status === 'Ready for Pickup') {
+      await QueueRecord.findOneAndUpdate({ order_id: order._id }, { status: 'ready' });
+    } else if (status === 'In Queue' || status === 'Ordered') {
+      await QueueRecord.findOneAndUpdate({ order_id: order._id }, { status: 'waiting' });
+    } else if (status === 'Delivered' || status === 'Cancelled') {
       await QueueRecord.findOneAndUpdate({ order_id: order._id }, { status: status === 'Delivered' ? 'done' : 'cancelled' });
-      
-      // Auto-advance the NEXT order in line to Preparing
-      const nextInLine = await QueueRecord.findOne({ status: 'waiting' }).sort({ queue_position: 1 });
-      if (nextInLine) {
-        nextInLine.status = 'preparing';
-        await nextInLine.save();
-        await Order.findByIdAndUpdate(nextInLine.order_id, { order_status: 'Preparing' });
-      }
+      await syncAutoPipeline();
     }
 
     res.json({ success: true, data: order });
@@ -201,7 +234,7 @@ const updateOrderStatus = async (req, res, next) => {
 const batchUpdateStatus = async (req, res, next) => {
   try {
     const { orderIds, status } = req.body;
-    const validStatuses = ['Ordered', 'OTP Verified', 'In Queue', 'Preparing', 'Delivered', 'Cancelled'];
+    const validStatuses = ['In Queue', 'Preparing', 'Ready for Pickup', 'Delivered', 'Cancelled', 'Ordered', 'OTP Verified'];
     if (!validStatuses.includes(status)) return res.status(400).json({ success: false, message: 'Invalid status.' });
     if (!Array.isArray(orderIds) || orderIds.length === 0) return res.status(400).json({ success: false, message: 'No orders selected.' });
 
@@ -211,19 +244,13 @@ const batchUpdateStatus = async (req, res, next) => {
     // Update queue records
     if (status === 'Preparing') {
       await QueueRecord.updateMany({ order_id: { $in: orderIds } }, { status: 'preparing' });
+    } else if (status === 'Ready for Pickup') {
+      await QueueRecord.updateMany({ order_id: { $in: orderIds } }, { status: 'ready' });
+    } else if (status === 'In Queue' || status === 'Ordered') {
+      await QueueRecord.updateMany({ order_id: { $in: orderIds } }, { status: 'waiting' });
     } else if (status === 'Delivered' || status === 'Cancelled') {
       await QueueRecord.updateMany({ order_id: { $in: orderIds } }, { status: status === 'Delivered' ? 'done' : 'cancelled' });
-
-      // If everything currently preparing is now done, start the next one
-      const stillPreparing = await QueueRecord.findOne({ status: 'preparing' });
-      if (!stillPreparing) {
-        const nextInLine = await QueueRecord.findOne({ status: 'waiting' }).sort({ queue_position: 1 });
-        if (nextInLine) {
-          nextInLine.status = 'preparing';
-          await nextInLine.save();
-          await Order.findByIdAndUpdate(nextInLine.order_id, { order_status: 'Preparing' });
-        }
-      }
+      await syncAutoPipeline();
     }
 
     res.json({ success: true, message: `Updated ${orderIds.length} orders to "${status}"` });
@@ -241,7 +268,7 @@ const getMyOrders = async (req, res, next) => {
 // GET /api/order/all  (staff)
 const getAllOrders = async (req, res, next) => {
   try {
-    const orders = await Order.find({ 
+    const orders = await Order.find({
       order_status: { $nin: ['Delivered', 'Cancelled'] },
       payment_status: 'paid' // Only show paid orders
     })
@@ -258,7 +285,7 @@ const getCompletedOrders = async (req, res, next) => {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
-    const orders = await Order.find({ 
+    const orders = await Order.find({
       order_status: { $in: ['Delivered', 'Cancelled'] },
       payment_status: 'paid', // Only show paid orders
       updatedAt: { $gte: startOfToday } // Filter by today's date
@@ -334,4 +361,4 @@ const submitFeedback = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { createOrder, getOrderStatus, verifyOTP, updateOrderStatus, batchUpdateStatus, getMyOrders, getAllOrders, getCompletedOrders, confirmPickup, submitFeedback };
+module.exports = { createOrder, getOrderStatus, verifyOTP, updateOrderStatus, batchUpdateStatus, getMyOrders, getAllOrders, getCompletedOrders, confirmPickup, submitFeedback, syncAutoPipeline };

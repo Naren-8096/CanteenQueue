@@ -21,9 +21,12 @@ const protect = async (req, res, next) => {
   }
 };
 
-const staffOnly = (req, res, next) => {
-  if (req.user && req.user.role === 'staff') return next();
-  res.status(403).json({ success: false, message: 'Access restricted to staff only.' });
+const adminOnly = (req, res, next) => {
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'staff')) return next();
+  res.status(403).json({ success: false, message: 'Access restricted to administrators only.' });
 };
 
-module.exports = { protect, staffOnly };
+// staffOnly provided as alias for backward compatibility
+const staffOnly = adminOnly;
+
+module.exports = { protect, adminOnly, staffOnly };

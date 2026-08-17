@@ -3,16 +3,24 @@ const Order = require('../models/Order');
 const QueueRecord = require('../models/QueueRecord');
 const MenuItem = require('../models/MenuItem');
 
-const isMock = process.env.PAYMENT_MODE === 'mock';
+const isMockMode = () => {
+  if (process.env.PAYMENT_MODE === 'mock') return true;
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  if (!keyId || !keySecret || keyId.includes('XXXX') || keySecret.includes('XXXX')) {
+    return true;
+  }
+  return false;
+};
 
-// Only load Razorpay if not in mock mode
-const razorpay = isMock ? null : (() => {
+const getRazorpayInstance = () => {
+  if (isMockMode()) return null;
   const Razorpay = require('razorpay');
   return new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
     key_secret: process.env.RAZORPAY_KEY_SECRET,
   });
-})();
+};
 
 const generateOTP = () => Math.floor(1000 + Math.random() * 9000).toString();
 
@@ -68,7 +76,7 @@ const createPaymentOrder = async (req, res, next) => {
     if (order.payment_status === 'paid') return res.status(400).json({ success: false, message: 'Already paid.' });
 
     // --- MOCK MODE ---
-    if (isMock) {
+    if (isMockMode()) {
       const mockOrderId = `mock_order_${Date.now()}`;
       order.razorpay_order_id = mockOrderId;
       await order.save();
@@ -88,6 +96,7 @@ const createPaymentOrder = async (req, res, next) => {
     }
 
     // --- REAL RAZORPAY ---
+    const razorpay = getRazorpayInstance();
     const razorpayOrder = await razorpay.orders.create({
       amount: Math.round(order.total_price * 100),
       currency: 'INR',
@@ -142,13 +151,17 @@ const verifyPayment = async (req, res, next) => {
           order.queue_position = queueRecord.queue_position;
           await order.save();
         }
+
+        // Auto-promote to cooking if kitchen slots are open
+        const { syncAutoPipeline } = require('./orderController');
+        await syncAutoPipeline();
       }
 
       return order;
     };
 
     // --- MOCK MODE: skip signature check ---
-    if (isMock) {
+    if (isMockMode()) {
       const order = await Order.findById(order_id);
       if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
       const updatedOrder = await markPaidAndQueue(order);

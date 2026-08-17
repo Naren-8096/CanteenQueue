@@ -34,7 +34,7 @@ const getItemQueuePositions = async (req, res, next) => {
     // Ensure the order belongs to this student (or is staff)
     const myOrder = await Order.findById(orderId);
     if (!myOrder) return res.status(404).json({ success: false, message: 'Order not found.' });
-    if (myOrder.user_id.toString() !== req.user._id.toString() && req.user.role !== 'staff') {
+    if (myOrder.user_id.toString() !== req.user._id.toString() && req.user.role !== 'admin' && req.user.role !== 'staff') {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 

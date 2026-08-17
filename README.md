@@ -1,134 +1,184 @@
 # 🍽️ CanteenQueue
 
 > **Digital College Canteen Ordering & Queue Management System**  
-> A comprehensive platform where students can order food online, pay securely via Razorpay, receive a token with OTP, and track their queue position in real-time. Staff can verify OTPs, manage orders, update availability, and monitor the queue from a dedicated dashboard.
+> A full-stack web application designed for campus cafeterias and canteens. Students and customers can browse the live menu, place orders online, pay seamlessly via Razorpay, receive unique order tokens with secure OTPs, and track their preparation and queue status in real-time. Administrators and canteen staff have access to a live dashboard for managing incoming orders, updating menu items, toggling item availability, and validating OTPs at the delivery counter.
 
 ---
 
-## ✨ Features
+## ✨ Key Features
 
-### For Students 👨‍🎓
-- ✅ Browse menu with real-time availability
-- ✅ Add items to cart with quantity control
-- ✅ Secure payment via Razorpay (with test mode)
-- ✅ Receive unique token number + OTP
-- ✅ Track live queue position and food prep status
-- ✅ View order history
-- ✅ Password reset via email
+### For Students & Customers 👨‍🎓
+- 📜 **Live Digital Menu**: Browse categorized items (Breakfast, Lunch, Snacks, Beverages) with real-time stock and availability.
+- 🛒 **Interactive Cart**: Instant quantity adjustment, preparation time estimation, and subtotal calculation.
+- 💳 **Seamless Checkout**: Razorpay online payment integration (with instant test mode support).
+- 🎫 **Token & OTP Generation**: Automated generation of secure collection tokens and verification OTPs.
+- ⏱️ **Real-Time Queue Tracking**: Live position tracking and preparation status (Pending → Preparing → Ready → Delivered).
+- 📜 **Order History**: Review past orders, download summaries, and track delivery history.
+- 🔐 **Modern Authentication**: Email/Password authentication + Google OAuth 2.0 single sign-on.
 
-### For Staff 👨‍💼
-- ✅ Real-time order dashboard
-- ✅ Verify customer OTP at counter
-- ✅ Update order status (Preparing → Delivered)
-- ✅ Manage menu items (add/edit/delete)
-- ✅ Toggle item availability & stock levels
-- ✅ View all active orders and queue
+### For Administrators & Canteen Staff 👨‍💼
+- 📊 **Real-Time Operations Dashboard**: Live view of pending, preparing, and ready orders with audio alerts.
+- 🔢 **Live Queue Monitor**: Visual FIFO order queue with estimated wait times.
+- 🔑 **OTP Counter Verification**: Quick 4-digit OTP verification system to prevent unauthorized pickups.
+- 🍔 **Menu Management**: Add new dishes, edit prices, upload image URLs, and delete discontinued items.
+- ⚡ **Stock & Availability Toggle**: Instantly mark items as In-Stock / Out-of-Stock.
+- 👥 **Role-Based Access Control**: Granular protection across Customer, Staff, and Admin roles.
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start Guide
 
 ### Prerequisites
-- **Node.js** v18 or higher
-- **MongoDB Atlas** account (free tier sufficient)
-- **Razorpay** account (for test payments)
-- **Nodemailer** (uses Ethereal for demo emails)
+- [Node.js](https://nodejs.org/) (v18 or higher recommended)
+- [MongoDB](https://www.mongodb.com/) (Local MongoDB Community Server or MongoDB Atlas cluster)
 
-### Installation
-
+### 1. Installation
+Clone the repository and install dependencies:
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/CanteenQueue.git
+# Navigate to project directory
 cd CanteenQueue
 
-# 1. Install dependencies
+# Install dependencies
 npm install
+```
 
-# 2. Create environment file
+### 2. Configure Environment Variables
+Copy `.env.example` to `.env` (or configure `.env` directly):
+```bash
 cp .env.example .env
+```
 
-# 3. Configure .env with your credentials
-# MongoDB URI
-# JWT Secret
-# Razorpay keys (get from Razorpay Dashboard)
-# Staff Registration Key
+Your `.env` should look like this:
+```env
+PORT=3000
+MONGO_URI=mongodb://localhost:27017/canteenqueue
+JWT_SECRET=canteenqueue_super_secret_jwt_key_2026
+JWT_EXPIRES_IN=7d
+SESSION_SECRET=canteenqueue_session_secret_key_2026
+NODE_ENV=development
 
-# 4. Seed the database with 15 sample menu items
+# Razorpay Payment Configuration (Test Mode)
+RAZORPAY_KEY_ID=rzp_test_XXXXXXXXXXXXXXXX
+RAZORPAY_KEY_SECRET=XXXXXXXXXXXXXXXXXXXXXXXX
+
+# Staff Registration Secret
+STAFF_SECRET=x9Pq2!mK#8vL$5wNz@7rY*4cT^1bJ&0dF
+
+# Primary Admin Account Configuration
+ADMIN_NAME=Canteen Administrator
+ADMIN_EMAIL=admin@canteen.com
+ADMIN_PASSWORD=admin123
+
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+```
+
+---
+
+## 🗄️ Database Management & Formatting
+
+### Reset & Format Database (Complete Fresh Start)
+To remove all existing customer accounts, old orders, queue logs, and reset the menu and admin account to a clean initial state:
+```bash
+npm run db:reset
+```
+
+> **What `db:reset` does:**
+> 1. Clears all users (customer, staff, and old admin accounts).
+> 2. Clears all orders and queue history.
+> 3. Populates 15 standard, rich menu items with photos, prices, and prep times.
+> 4. Creates a fresh primary Admin account (`admin@canteen.com` / `admin123`).
+
+### Other Useful Database Commands
+```bash
+# Test database connection and count records
+npm run db:test
+
+# Seed only menu items
 npm run seed
 
-# 5. Start the server
-npm start
+# Seed/Reset only the Admin account
+npm run seed:admin
+```
 
-# OR for development (with auto-reload via nodemon):
+---
+
+## 💻 Starting the Application
+
+### Development Mode (with hot-reloading)
+```bash
 npm run dev
 ```
 
-**Server will start on** `http://localhost:5000`
-
-### Test Credentials (after seeding)
-
-```
-🎓 Student Account
-Email: student@example.com
-Password: password123
-
-👨‍💼 Staff Account
-Email: staff@example.com
-Password: password123
-Staff Key: admin-secret-2024
+### Production Mode
+```bash
+npm start
 ```
 
-### Test Razorpay Card
-```
-Card Number: 4111 1111 1111 1111
-Expiry: 12/28
-CVV: 123
-```
+Open your browser and visit: **`http://localhost:3000`**
 
 ---
 
-## 📁 Project Structure
+## 🔑 Default Credentials
+
+| Role | Email | Password | Access / Portal |
+| :--- | :--- | :--- | :--- |
+| **👑 Admin** | `admin@canteen.com` | `admin123` | `/admin-dashboard.html` |
+| **👥 Customer / Student** | Register new via `/register.html` | User created | `/customer-dashboard.html` |
+
+### Test Razorpay Payment Credentials (Test Mode)
+When prompted in the checkout modal:
+- **Card Number**: `4111 1111 1111 1111`
+- **Expiry**: `12/28`
+- **CVV**: `123`
+- **OTP**: Any 4-6 digit number (e.g. `123456`)
+
+---
+
+## 📁 Project Directory Structure
 
 ```
 CanteenQueue/
-├── server.js                      # Express.js entry point
-├── package.json                   # Dependencies & scripts
-├── .env.example                   # Environment variables template
-├── .gitignore
+├── server.js                      # Express application entry point
+├── package.json                   # Project metadata, scripts & dependencies
+├── test-db.js                     # MongoDB connection & model diagnostic script
+├── .env                           # Environment configuration
+├── .env.example                   # Environment configuration template
 │
-├── frontend/                      # Static frontend (SPA)
-│   ├── index.html                 # Landing page
-│   ├── login.html                 # Login form
-│   ├── register.html              # Registration (student/staff)
-│   ├── student-dashboard.html     # Menu browse + shopping cart
-│   ├── checkout.html              # Razorpay payment interface
-│   ├── order-confirmation.html    # Token, OTP, live tracker
-│   ├── my-orders.html             # Order history
-│   ├── staff-dashboard.html       # Order management + queue
-│   ├── forgot-password.html       # Password recovery
-│   ├── reset-password.html        # Password reset form
+├── frontend/                      # Frontend Single Page Applications & UI
+│   ├── index.html                 # Landing / Welcome page
+│   ├── login.html                 # User & Admin login
+│   ├── register.html              # Customer registration page
+│   ├── customer-dashboard.html    # Menu browsing, cart, and live order drawer
+│   ├── checkout.html              # Payment review & Razorpay checkout
+│   ├── order-confirmation.html    # Real-time token & OTP live tracker
+│   ├── my-orders.html             # Customer order history
+│   ├── admin-dashboard.html       # Canteen admin order processing & menu manager
+│   ├── forgot-password.html       # Password reset request
+│   ├── reset-password.html        # New password entry form
 │   ├── css/
-│   │   └── style.css              # Global design system (variables + components)
+│   │   └── style.css              # Unified UI theme & responsive styling
 │   └── js/
-│       ├── api.js                 # Fetch wrapper + notification helpers
-│       └── auth.js                # JWT storage + role-based navigation
+│       ├── api.js                 # Unified API client & notification handler
+│       └── auth.js                # Auth helpers, token storage & RBAC guards
 │
-└── src/                           # Backend (Node.js)
+└── src/                           # Backend Source Code
     ├── config/
-    │   ├── db.js                  # MongoDB connection
-    │   └── passport.js            # Passport authentication config
+    │   ├── db.js                  # Mongoose MongoDB connection handler
+    │   └── passport.js            # Google OAuth 2.0 strategy setup
     ├── models/
-    │   ├── User.js                # Student & Staff schema
-    │   ├── MenuItem.js            # Menu items with stock/availability
-    │   ├── Order.js               # Order schema with OTP & token
-    │   └── QueueRecord.js         # Queue position tracking
+    │   ├── User.js                # User schema (Customer, Staff, Admin)
+    │   ├── MenuItem.js            # Menu item schema
+    │   ├── Order.js               # Order schema with OTP, token & status
+    │   └── QueueRecord.js         # Live FIFO queue positioning model
     ├── controllers/
-    │   ├── authController.js      # Register, login, password reset
-    │   ├── menuController.js      # Menu CRUD operations
-    │   ├── orderController.js     # Create order, verify OTP
-    │   ├── queueController.js     # Queue position calculations
-    │   ├── paymentController.js   # Razorpay integration
-    │   └── availabilityController.js  # Availability & stock updates
+    │   ├── authController.js      # Register, Login, Admin creation, OAuth
+    │   ├── menuController.js      # Menu item CRUD operations
+    │   ├── orderController.js     # Create order, OTP verification & updates
+    │   ├── queueController.js     # FIFO queue tracking calculations
+    │   ├── paymentController.js   # Razorpay order generation & verification
+    │   └── availabilityController.js # Stock & instant item availability
     ├── routes/
     │   ├── auth.js                # /api/auth/*
     │   ├── menu.js                # /api/menu/*
@@ -137,452 +187,63 @@ CanteenQueue/
     │   ├── payment.js             # /api/payment/*
     │   └── availability.js        # /api/availability/*
     ├── middleware/
-    │   ├── auth.js                # JWT verification + role checks
-    │   └── errorHandler.js        # Global error handler
+    │   ├── auth.js                # JWT token verification & role enforcement
+    │   └── errorHandler.js        # Centralized HTTP error handler
     ├── utils/
-    │   └── sendEmail.js           # Nodemailer email service
+    │   └── sendEmail.js           # Email delivery utility (Nodemailer)
     └── seed/
-        └── menuSeed.js            # Populate 15 sample menu items
+        ├── resetDb.js             # Full DB wipe & fresh seed script
+        ├── adminSeed.js           # Admin account seeding script
+        └── menuSeed.js            # Menu items seeding script
 ```
 
 ---
 
-## 🔌 API Endpoints
+## 🔌 API Reference
 
-### Authentication
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| POST | `/api/auth/register` | — | Register (student/staff) |
-| POST | `/api/auth/login` | — | Login → JWT token |
-| GET | `/api/auth/me` | JWT | Get current user profile |
-| PUT | `/api/auth/me` | JWT | Update profile |
-| POST | `/api/auth/forgotpassword` | — | Request password reset |
-| PUT | `/api/auth/resetpassword/:token` | — | Reset password with token |
+### Authentication (`/api/auth`)
+| Method | Endpoint | Authorization | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/register` | Public | Register new customer account |
+| `POST` | `/api/auth/login` | Public | Login with email & password |
+| `POST` | `/api/auth/admin/create-admin` | Admin | Create an additional Admin account |
+| `GET` | `/api/auth/me` | JWT | Get current user profile |
+| `PUT` | `/api/auth/me` | JWT | Update current user profile |
+| `POST` | `/api/auth/forgotpassword` | Public | Send password reset email |
+| `PUT` | `/api/auth/resetpassword/:token`| Public | Reset password with token |
+| `GET` | `/api/auth/google` | Public | Initiate Google OAuth 2.0 login |
+| `GET` | `/api/auth/google/callback` | Public | Google OAuth 2.0 callback URL |
 
-### Menu Management
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| GET | `/api/menu` | — | Get all menu items |
-| POST | `/api/menu` | Staff | Create menu item |
-| PUT | `/api/menu/:id` | Staff | Update menu item |
-| DELETE | `/api/menu/:id` | Staff | Delete menu item |
-| PUT | `/api/availability/update` | Staff | Update availability & stock |
+### Menu Management (`/api/menu`)
+| Method | Endpoint | Authorization | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/menu` | Public | List all active menu items |
+| `POST` | `/api/menu` | Admin / Staff | Add a new menu item |
+| `PUT` | `/api/menu/:id` | Admin / Staff | Update menu item details |
+| `DELETE` | `/api/menu/:id` | Admin / Staff | Remove menu item |
+| `PUT` | `/api/availability/update` | Admin / Staff | Bulk update stock / availability |
 
-### Orders
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| POST | `/api/order/create` | Student | Place new order |
-| GET | `/api/order/my-orders` | Student | Get my orders |
-| GET | `/api/order/all` | Staff | Get all active orders |
-| GET | `/api/order/completed` | Staff | Get completed orders |
-| GET | `/api/order/status/:id` | JWT | Get order status |
-| POST | `/api/order/verify-otp` | Staff | Verify customer OTP |
-| PUT | `/api/order/status/:id` | Staff | Update order status |
-| PUT | `/api/order/batch-status` | Staff | Bulk update multiple orders |
+### Order & Queue Management (`/api/order` & `/api/queue`)
+| Method | Endpoint | Authorization | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/order/create` | JWT | Place new food order |
+| `GET` | `/api/order/my-orders` | JWT | Fetch orders belonging to logged-in user |
+| `GET` | `/api/order/all` | Admin / Staff | Fetch all active canteen orders |
+| `GET` | `/api/order/completed` | Admin / Staff | Fetch archived / completed orders |
+| `GET` | `/api/order/status/:id` | JWT | Fetch status of specific order |
+| `POST` | `/api/order/verify-otp` | Admin / Staff | Verify order pickup OTP |
+| `PUT` | `/api/order/status/:id` | Admin / Staff | Update order lifecycle status |
+| `GET` | `/api/queue` | Admin / Staff | Live FIFO queue stream |
+| `GET` | `/api/queue/position/:orderId` | JWT | Get live queue spot for order |
 
-### Queue Management
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| GET | `/api/queue` | Staff | Get live FIFO queue |
-| GET | `/api/queue/position/:orderId` | JWT | Get queue position |
-| GET | `/api/queue/item-positions/:orderId` | JWT | Get item prep times |
-
-### Payment (Razorpay)
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| POST | `/api/payment/create-order` | JWT | Create Razorpay order |
-| POST | `/api/payment/verify` | JWT | Verify payment signature |
+### Payments (`/api/payment`)
+| Method | Endpoint | Authorization | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/payment/create-order` | JWT | Create Razorpay order instance |
+| `POST` | `/api/payment/verify` | JWT | Verify Razorpay payment signature |
 
 ---
 
-## 🔄 Order Flow & User Journey
+## 🛡️ License
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ STUDENT JOURNEY                                                 │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  1️⃣  Register/Login                                             │
-│       └─→ Redirected to Student Dashboard                       │
-│                                                                  │
-│  2️⃣  Browse Menu & Add to Cart                                  │
-│       └─→ Items fetched from /api/menu                          │
-│       └─→ Cart stored in localStorage                           │
-│                                                                  │
-│  3️⃣  Checkout & Payment                                         │
-│       └─→ POST /api/order/create (reserve items, generate OTP)  │
-│       └─→ Receive: token_number, otp_code, order_id            │
-│       └─→ POST /api/payment/create-order (Razorpay)            │
-│       └─→ Modal popup for card details                         │
-│       └─→ POST /api/payment/verify (HMAC signature check)      │
-│                                                                  │
-│  4️⃣  Order Confirmation & Tracking                              │
-│       └─→ Token number displayed prominently                    │
-│       └─→ OTP shown for verification at counter                 │
-│       └─→ Live queue position & item prep times               │
-│       └─→ Poll /api/queue/position/:orderId every 3s          │
-│                                                                  │
-│  5️⃣  Order Delivery                                             │
-│       └─→ Staff calls token & verifies OTP                      │
-│       └─→ Order marked as "Delivered"                           │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│ STAFF JOURNEY                                                   │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  1️⃣  Login (with staff key)                                     │
-│       └─→ Redirected to Staff Dashboard                         │
-│                                                                  │
-│  2️⃣  Monitor Orders                                             │
-│       └─→ GET /api/order/all → Active orders list              │
-│       └─→ GET /api/queue → Live FIFO queue                     │
-│                                                                  │
-│  3️⃣  Verify Customer at Counter                                 │
-│       └─→ Customer shows OTP                                    │
-│       └─→ POST /api/order/verify-otp (confirm OTP)            │
-│       └─→ Order status updates to "In Queue"                    │
-│                                                                  │
-│  4️⃣  Update Order Status                                        │
-│       └─→ PUT /api/order/status/:id → "Preparing"             │
-│       └─→ Student app updates in real-time                      │
-│       └─→ PUT /api/order/status/:id → "Delivered"             │
-│                                                                  │
-│  5️⃣  Manage Menu & Availability                                 │
-│       └─→ Add/edit/delete items                                 │
-│       └─→ Update stock & availability                           │
-│       └─→ Mark items unavailable (maintenance/out-of-stock)    │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🔐 Security
-
-- **JWT Authentication** (7-day token expiry) with bearer token validation
-- **Password Security** (bcryptjs with 12-round salt hashing)
-- **Payment Verification** (HMAC SHA-256 Razorpay signature verification)
-- **Role-Based Access Control** (student/staff separation at route level)
-- **OTP Verification** (4-digit OTP for in-person delivery confirmation)
-- **Secure Cookies** (HTTP-only, secure flag in production)
-- **Input Validation** (Joi schema validation on all requests)
-
----
-
-## 🛠️ Tech Stack
-
-| Component | Technology |
-|-----------|------------|
-| **Backend** | Node.js, Express.js |
-| **Database** | MongoDB (Atlas), Mongoose ODM |
-| **Authentication** | JWT (jsonwebtoken), bcryptjs |
-| **Payment Gateway** | Razorpay (REST API) |
-| **Frontend** | HTML5, CSS3, Vanilla JavaScript |
-| **Email Service** | Nodemailer (Ethereal for demo) |
-| **Utilities** | OTP Generator, Passport.js |
-| **Styling** | CSS Variables, Flexbox, Grid |
-| **Fonts** | Google Fonts (Outfit family) |
-
----
-
-## 📊 Database Schema
-
-### User
-```javascript
-{
-  name: String,
-  email: String (unique),
-  password: String (hashed),
-  role: 'student' | 'staff',
-  createdAt, updatedAt
-}
-```
-
-### MenuItem
-```javascript
-{
-  item_name: String,
-  description: String,
-  price: Number,
-  category: 'Breakfast' | 'Lunch' | 'Snacks' | 'Beverages' | 'Dinner',
-  availability: Boolean,
-  stock: Number | null,
-  image_url: String,
-  prep_time: Number (minutes),
-  createdAt, updatedAt
-}
-```
-
-### Order
-```javascript
-{
-  user_id: ObjectId,
-  items: [{ item_id, item_name, price, quantity }],
-  total_price: Number,
-  token_number: Number (auto-assigned 1001+),
-  otp_code: String,
-  otp_verified: Boolean,
-  queue_position: Number,
-  order_status: 'Ordered' | 'OTP Verified' | 'In Queue' | 'Preparing' | 'Delivered' | 'Cancelled',
-  payment_id: String,
-  payment_status: 'pending' | 'paid' | 'failed',
-  razorpay_order_id: String,
-  createdAt, updatedAt
-}
-```
-
-### QueueRecord
-```javascript
-{
-  order_id: ObjectId,
-  user_id: ObjectId,
-  queue_position: Number,
-  status: 'waiting' | 'preparing' | 'completed',
-  createdAt, updatedAt
-}
-```
-
----
-
-## � Environment Setup
-
-### 1. MongoDB Atlas (Database)
-```
-1. Go to https://www.mongodb.com/cloud/atlas
-2. Sign up (free tier available)
-3. Create a cluster (M0 free tier)
-4. Get connection string: mongodb+srv://user:password@cluster.mongodb.net/canteenqueue
-5. Add to .env as MONGO_URI
-```
-
-### 2. Razorpay Account (Payments)
-```
-1. Sign up at https://razorpay.com
-2. Go to Settings → API Keys
-3. Copy Key ID and Key Secret (test mode)
-4. Add to .env as RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET
-```
-
-### 3. Generate JWT Secrets
-```bash
-# Generate a strong JWT secret
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-
-# Add to .env as JWT_SECRET and SESSION_SECRET
-```
-
-### 4. Environment File (.env)
-```bash
-# Create .env file at project root
-PORT=5000
-NODE_ENV=development
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/canteenqueue?retryWrites=true&w=majority
-JWT_SECRET=your_very_long_random_secret_key_here
-JWT_EXPIRES_IN=7d
-SESSION_SECRET=another_random_secret_key
-RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxxxxx
-RAZORPAY_KEY_SECRET=xxxxxxxxxxxxxxxx
-STAFF_SECRET=admin-secret-2024
-PAYMENT_MODE=mock  # or 'live' for production
-```
-
----
-
-## 🧪 Testing
-
-### 1. Register & Login
-```bash
-# Student Account
-Email: student@example.com
-Password: password123
-
-# Staff Account (requires STAFF_SECRET)
-Email: staff@example.com
-Password: password123
-Staff Key: admin-secret-2024
-```
-
-### 2. Test Order Flow
-- Login as student → Browse menu
-- Add 2-3 items to cart → Proceed to checkout
-- Use test card: `4111 1111 1111 1111`
-- Receive token number & OTP
-- Login as staff → Verify OTP
-- Update order status → See real-time updates
-
-### 3. Test API Endpoints (using cURL)
-```bash
-# Get all menu items
-curl http://localhost:5000/api/menu
-
-# Login
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"student@example.com","password":"password123"}'
-
-# Get queue position (with JWT token)
-curl http://localhost:5000/api/queue/position/ORDER_ID \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
----
-
-## 🐛 Troubleshooting
-
-### MongoDB Connection Error
-```
-❌ Error: MONGO_URI not set or invalid
-✅ Solution: Check .env file and MongoDB Atlas IP whitelist
-```
-
-### Razorpay Payment Failing
-```
-❌ Error: Payment verification failed
-✅ Solution: Check Razorpay keys in .env
-✅ Tip: Use PAYMENT_MODE=mock for testing
-```
-
-### Port Already in Use
-```bash
-# Kill process on port 5000
-npx kill-port 5000
-```
-
-### Email Not Sending
-```
-❌ Error: Email service error
-✅ Solution: Nodemailer uses Ethereal (test email service)
-✅ Check console for test email links
-```
-
-### JWT Token Expired
-```
-❌ Error: Token invalid or expired
-✅ Solution: Login again to get fresh token
-```
-
----
-
-## 📖 API Usage Examples
-
-### Register Student
-```javascript
-const response = await fetch('/api/auth/register', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    name: 'Raj Kumar',
-    email: 'raj@example.com',
-    password: 'secure123',
-    role: 'student'
-  })
-});
-const data = await response.json();
-// data.token → Save to localStorage
-```
-
-### Create Order
-```javascript
-const response = await fetch('/api/order/create', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
-  },
-  body: JSON.stringify({
-    items: [
-      { item_id: '507f1f77bcf86cd799439011', quantity: 2 },
-      { item_id: '507f1f77bcf86cd799439012', quantity: 1 }
-    ]
-  })
-});
-const data = await response.json();
-// data.data.order_id → Use for payment
-// data.data.otp_code → Show to student
-// data.data.token_number → Display at counter
-```
-
-### Verify Payment
-```javascript
-const response = await fetch('/api/payment/verify', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
-  },
-  body: JSON.stringify({
-    razorpay_order_id: 'order_123456',
-    razorpay_payment_id: 'pay_123456',
-    razorpay_signature: 'signature_hash',
-    order_id: 'mongodb_order_id'
-  })
-});
-```
-
----
-
-## 📱 Screenshots & UI Features
-
-- **Responsive Design** (Mobile-first CSS)
-- **Dark Mode Support** (CSS variables)
-- **Toast Notifications** (Success/Error alerts)
-- **Loading States** (Spinner overlays)
-- **Real-time Updates** (Polling every 3 seconds)
-- **Modal Dialogs** (Payment, confirmations)
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch: `git checkout -b feature/YourFeature`
-3. Commit changes: `git commit -m 'Add YourFeature'`
-4. Push to branch: `git push origin feature/YourFeature`
-5. Submit Pull Request
-
-### Code Style
-- Use consistent indentation (2 spaces)
-- Follow existing naming conventions
-- Add comments for complex logic
-- Test before submitting PR
-
----
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
----
-
-## 👥 Authors
-
-- **Naren Ragam** - Full Stack Development
-
----
-
-## 📞 Support & Contact
-
-For issues, bugs, or feature requests:
-- Open a [GitHub Issue](https://github.com/yourusername/CanteenQueue/issues)
-- Email: your.email@example.com
-
----
-
-## 🎯 Future Enhancements
-
-- [ ] Email notifications when order ready
-- [ ] Push notifications for students
-- [ ] Analytics dashboard for staff
-- [ ] Multi-language support
-- [ ] Item ratings & reviews
-- [ ] Favorite items saved
-- [ ] Dietary preference filters
-- [ ] Integration with canteen admin
-- [ ] Mobile app (React Native)
-- [ ] WhatsApp notifications
-
----
-
-**Happy Ordering! 🍔🍕🍜**
+This project is open-source and available under the [MIT License](LICENSE).

@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Control Panel – CanteenQueue</title>
+  <meta name="description"
+    content="Admin control panel for managing canteen orders, OTP verification, queue, menu, and admin team." />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ── ADMIN SHELL ── */
+    .shell {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem;
+    }
+
+    /* ── STATS ROW ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    @media(max-width:768px) {
+      .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media(max-width:440px) {
+      .stats-row {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .stat-tile {
+      background: var(--surface);
+      border: none;
+      border-radius: var(--radius-lg);
+      padding: 1.75rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: .25rem;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-tile::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      border-radius: 4px;
+    }
+
+    .stat-tile:nth-child(1)::before {
+      background: var(--accent);
+    }
+
+    .stat-tile:nth-child(2)::before {
+      background: var(--warning);
+    }
+
+    .stat-tile:nth-child(3)::before {
+      background: var(--danger);
+    }
+
+    .stat-tile:nth-child(4)::before {
+      background: var(--success);
+    }
+
+    .stat-tile:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-3px);
+    }
+
+    .stat-tile:nth-child(1) .stat-tile-icon {
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .stat-tile:nth-child(2) .stat-tile-icon {
+      color: var(--warning);
+      background: var(--warning-soft);
+    }
+
+    .stat-tile:nth-child(3) .stat-tile-icon {
+      color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    .stat-tile:nth-child(4) .stat-tile-icon {
+      color: var(--success);
+      background: var(--success-soft);
+    }
+
+    .stat-tile-icon {
+      font-size: 1.5rem;
+      margin-bottom: .5rem;
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stat-tile-value {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: var(--ink);
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: .2rem;
+    }
+
+    .stat-tile-label {
+      font-size: .85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--ink-faint);
+    }
+
+    /* ── TAB NAV ── */
+    .tab-nav {
+      display: flex;
+      gap: .75rem;
+      border-bottom: none;
+      margin-bottom: 2.5rem;
+      overflow-x: auto;
+      padding: .5rem;
+      background: var(--surface);
+      border-radius: var(--radius-full);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-light);
+    }
+
+    .tab-btn {
+      padding: .75rem 1.75rem;
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-full);
+      color: var(--ink-faint);
+      font-family: var(--font);
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all var(--transition);
+      white-space: nowrap;
+      letter-spacing: -.01em;
+    }
+
+    .tab-btn:hover {
+      color: var(--ink);
+      background: var(--surface-bg);
+    }
+
+    .tab-btn.active {
+      color: var(--ink);
+      background: var(--surface-2);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeInUp .4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    /* ── SECTION HEAD ── */
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .section-head h3 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    /* ── ORDER CARD ── */
+    .order-card {
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition);
+      position: relative;
+    }
+
+    .order-card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-bright);
+    }
+
+    .order-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .order-token {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--ink);
+      letter-spacing: -0.02em;
+    }
+
+    .order-meta {
+      font-size: .9rem;
+      color: var(--ink-dim);
+      margin-top: .2rem;
+      font-weight: 500;
+    }
+
+    .order-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .order-items span {
+      background: var(--surface-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      padding: .3rem .8rem;
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .order-actions {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      flex-wrap: wrap;
+    }
+
+    /* ── AVAILABILITY ── */
+    .avail-list {
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+    }
+
+    .avail-row {
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .avail-name {
+      font-weight: 800;
+      font-size: 1.1rem;
+    }
+
+    .avail-meta {
+      font-size: .85rem;
+      color: var(--ink-dim);
+      margin-top: .2rem;
+      font-weight: 500;
+    }
+
+    /* ── MENU FORM ── */
+    .menu-form-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .menu-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .img-src-tabs {
+      display: flex;
+      gap: .5rem;
+      margin-bottom: .75rem;
+    }
+
+    .img-src-tab {
+      padding: .4rem .9rem;
+      font-size: .85rem;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-bg);
+      color: var(--ink-dim);
+      cursor: pointer;
+    }
+
+    .img-src-tab.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .img-src-panel {
+      display: none;
+    }
+
+    .img-src-panel.active {
+      display: block;
+    }
+
+    .img-preview-wrap {
+      margin-top: .75rem;
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface-bg);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-sm);
+      padding: .5rem;
+    }
+
+    .img-preview-placeholder {
+      font-size: .9rem;
+      font-weight: 600;
+      color: var(--ink-dim);
+      pointer-events: none;
+    }
+
+    /* ── MANAGE ITEM CARD ── */
+    .manage-item {
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .manage-item:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    .manage-item-info {
+      flex: 1;
+    }
+
+    .manage-item-name {
+      font-weight: 800;
+      font-size: 1.1rem;
+    }
+
+    .manage-item-sub {
+      font-size: .85rem;
+      color: var(--ink-dim);
+      margin-top: .2rem;
+      font-weight: 500;
+    }
+
+    .manage-item-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    /* ── ADMIN ROLE CHIP ── */
+    .role-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      background: var(--surface-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      padding: .4rem 1.2rem;
+      font-size: .9rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    /* Modal Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 1;
+      transition: opacity .2s;
+    }
+
+    .modal-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .modal-content {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      transform: scale(1);
+      transition: transform .2s;
+    }
+
+    .modal-overlay.hidden .modal-content {
+      transform: scale(0.95);
+    }
+
+    /* ── INLINE OTP ── */
+    .inline-otp {
+      display: flex;
+      gap: .5rem;
+      align-items: center;
+      background: var(--surface-bg);
+      padding: .4rem;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--border);
+    }
+
+    .inline-otp input {
+      width: 80px;
+      border: none;
+      background: transparent;
+      padding: .3rem .5rem;
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: .2em;
+      text-align: center;
+      outline: none;
+      color: var(--accent);
+    }
+
+    /* ── SLEEK COUNTER COMMAND BAR ── */
+    .counter-action-bar {
+      display: flex;
+      align-items: center;
+      gap: .85rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      padding: .45rem .6rem .45rem 1.25rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+      transition: all 0.2s ease;
+      width: 100%;
+      max-width: 620px;
+    }
+    .counter-action-bar:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 8px 30px rgba(14, 165, 233, 0.12);
+    }
+    .counter-bar-icon {
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      opacity: 0.85;
+    }
+    .counter-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      flex: 1;
+    }
+    .counter-input-label {
+      font-size: .68rem;
+      font-weight: 800;
+      color: var(--ink-faint);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .counter-input {
+      border: none;
+      background: transparent;
+      outline: none;
+      font-family: var(--font);
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--ink);
+      width: 100%;
+      padding: .3rem 0;
+    }
+    .counter-input::placeholder {
+      color: #94a3b8;
+      font-weight: 600;
+      opacity: 0.6;
+    }
+    .counter-input.otp-pin {
+      letter-spacing: .25em;
+      color: var(--accent);
+      font-weight: 900;
+    }
+    .counter-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--border);
+    }
+    .btn-counter-deliver {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-full);
+      padding: .65rem 1.4rem;
+      font-size: .9rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .btn-counter-deliver:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+    }
+    .btn-counter-deliver:active {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="loading-overlay hidden" id="loading-overlay">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <p>Fetching the latest data…</p>
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="/" class="navbar-brand">🍽 Canteen<span>Queue</span></a>
+    <div class="navbar-nav" style="display:flex; align-items:center; gap:.5rem;">
+      <a href="display.html" target="_blank" class="btn btn-ghost btn-sm" style="font-weight:700; border-radius:99px; color:var(--accent);">📺 Live TV Display ↗</a>
+      <div class="role-chip">👑 Admin: <strong id="adminName" style="color:var(--accent)">Administrator</strong></div>
+      <button onclick="openAccountSettings()" class="btn btn-outline btn-sm" style="border-radius:99px">⚙️
+        Settings</button>
+      <button onclick="logout()" class="btn btn-outline btn-sm" style="border-radius:99px">Logout</button>
+    </div>
+  </nav>
+
+  <div class="shell">
+
+    <!-- ── STATS ── -->
+    <div class="stats-row">
+      <div class="stat-tile">
+        <div class="stat-tile-icon">📋</div>
+        <div class="stat-tile-value" id="statTotal">0</div>
+        <div class="stat-tile-label">Total Orders</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-tile-icon">⏳</div>
+        <div class="stat-tile-value" id="statQueue">0</div>
+        <div class="stat-tile-label">In Queue</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-tile-icon">🍳</div>
+        <div class="stat-tile-value" id="statPrep">0</div>
+        <div class="stat-tile-label">Preparing</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-tile-icon">✅</div>
+        <div class="stat-tile-value" id="statDone">0</div>
+        <div class="stat-tile-label">Delivered</div>
+      </div>
+    </div>
+
+    <!-- ── TABS ── -->
+    <div class="tab-nav">
+      <button class="tab-btn active" data-tab="orders">📦 Live Orders</button>
+      <button class="tab-btn" data-tab="kitchen">🍳 Kitchen Batch View</button>
+      <button class="tab-btn" data-tab="completed">✅ Completed Orders</button>
+      <button class="tab-btn" data-tab="availability">🍽️ Food Availability</button>
+      <button class="tab-btn" data-tab="menu">✏️ Manage Menu</button>
+      <button class="tab-btn" data-tab="team">👥 Admin Team</button>
+    </div>
+
+    <!-- ── ORDERS TAB ── -->
+    <div class="tab-content active" id="tab-orders">
+      <!-- SLEEK COUNTER COMMAND BAR -->
+      <div style="display:flex; justify-content:center; margin-bottom:1.5rem;">
+        <div class="counter-action-bar">
+          <div class="counter-bar-icon">⚡</div>
+          <div class="counter-input-wrap">
+            <span class="counter-input-label">Token</span>
+            <input id="verifyOrderId" class="counter-input" type="number" min="1" placeholder="#1042" onkeypress="if(event.key==='Enter') document.getElementById('verifyOtp').focus()" />
+          </div>
+          <div class="counter-divider"></div>
+          <div class="counter-input-wrap">
+            <span class="counter-input-label">OTP</span>
+            <input id="verifyOtp" class="counter-input otp-pin" maxlength="4" placeholder="••••" onkeypress="if(event.key==='Enter') verifyOTPAction()" />
+          </div>
+          <button class="btn-counter-deliver" onclick="verifyOTPAction()">
+            <span>Deliver</span> 🚀
+          </button>
+        </div>
+      </div>
+      <div id="otpResult" class="hidden" style="max-width:620px; margin:0 auto 1.5rem;"></div>
+
+      <div class="section-head">
+        <h3>Active Orders</h3>
+        <button class="btn btn-ghost" onclick="loadOrders(true)" style="font-weight:700">↻ Refresh List</button>
+      </div>
+
+      <div id="ordersList">
+        <div class="empty-state">
+          <div class="icon">📋</div>
+          <h3>Loading orders…</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── KITCHEN BATCH TAB ── -->
+    <div class="tab-content" id="tab-kitchen">
+      <div class="section-head">
+        <div>
+          <h3>🍳 Kitchen Station & Item Batching</h3>
+          <p style="color:var(--ink-dim);font-size:.88rem;margin-top:.2rem;">Aggregated items to cook across all waiting & preparing orders.</p>
+        </div>
+        <button class="btn btn-ghost" onclick="loadKitchenBatch(true)" style="font-weight:700">↻ Refresh Kitchen</button>
+      </div>
+      <div id="kitchenBatchContainer" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:1.25rem;">
+        <div class="empty-state" style="grid-column:1/-1;">
+          <div class="icon">🍳</div>
+          <h3>Loading kitchen batches…</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── COMPLETED ORDERS TAB ── -->
+    <div class="tab-content" id="tab-completed">
+      <div class="section-head">
+        <h3>Today's Completed Orders</h3>
+        <button class="btn btn-ghost" onclick="loadCompletedOrders(true)" style="font-weight:700">↻ Refresh
+          List</button>
+      </div>
+      <div id="completedOrdersList">
+        <div class="empty-state">
+          <div class="icon">✅</div>
+          <h3>Loading…</h3>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ── AVAILABILITY TAB ── -->
+    <div class="tab-content" id="tab-availability">
+      <div class="section-head">
+        <h3>Today's Food Availability</h3>
+      </div>
+      <div class="avail-list" id="availabilityList">
+        <div class="empty-state">
+          <div class="icon">🍽️</div>
+          <h3>Loading…</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MENU MANAGEMENT TAB ── -->
+    <div class="tab-content" id="tab-menu">
+      <div class="section-head">
+        <h3>Menu Management</h3>
+      </div>
+
+      <!-- Add form -->
+      <div class="menu-form-wrap">
+        <div
+          style="font-size:.85rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:1.5rem">
+          Add New Item</div>
+        <form id="menuForm">
+          <div class="menu-form-grid">
+            <div class="input-group"><label>Item Name</label><input id="mName" class="input"
+                placeholder="e.g. Veg Biryani" required /></div>
+            <div class="input-group"><label>Price (₹)</label><input id="mPrice" type="number" class="input"
+                placeholder="60" min="0" required /></div>
+            <div class="input-group"><label>Category</label>
+              <select id="mCategory" class="input">
+                <option>Breakfast</option>
+                <option>Lunch</option>
+                <option>Snacks</option>
+                <option>Beverages</option>
+                <option>Dinner</option>
+              </select>
+            </div>
+            <div class="input-group"><label>Prep Time (mins)</label><input id="mPrep" type="number" class="input"
+                placeholder="10" min="1" /></div>
+            <div class="input-group"><label>Stock Count</label><input id="mStock" type="number" class="input"
+                placeholder="Leave blank for unlimited" min="0" /></div>
+            <div class="input-group" style="grid-column:1/-1"><label>Description</label><input id="mDesc" class="input"
+                placeholder="Short description…" /></div>
+            <!-- Image source: URL or file upload -->
+            <div class="input-group" style="grid-column:1/-1; margin-top:1rem;">
+              <label>Item Image</label>
+              <div class="img-src-tabs">
+                <button type="button" class="img-src-tab active" id="imgTabUrl" onclick="switchImgTab('url')">🔗 Paste
+                  URL</button>
+                <button type="button" class="img-src-tab" id="imgTabFile" onclick="switchImgTab('file')">📁 Upload
+                  Photo</button>
+              </div>
+
+              <!-- URL panel -->
+              <div class="img-src-panel active" id="imgPanelUrl">
+                <input id="mImg" class="input" placeholder="https://example.com/image.jpg"
+                  oninput="previewUrlImage(this.value)" />
+                <div class="img-preview-wrap" id="urlPreviewWrap">
+                  <span class="img-preview-placeholder">Image preview will appear here</span>
+                </div>
+              </div>
+
+              <!-- File upload panel -->
+              <div class="img-src-panel" id="imgPanelFile">
+                <label class="btn btn-outline" for="mImgFile"
+                  style="width:100%; display:inline-flex;align-items:center;justify-content:center;gap:.6rem;cursor:pointer;padding:1rem;border-style:dashed;">
+                  📷 Choose Photo from Device
+                </label>
+                <input id="mImgFile" type="file" accept="image/*" style="display:none"
+                  onchange="handleFileUpload(this)" />
+                <div style="text-align:center;margin-top:.5rem;"><span id="mImgFileName"
+                    style="font-size:.85rem;font-weight:600;color:var(--ink-dim);"></span></div>
+                <div class="img-preview-wrap" id="filePreviewWrap">
+                  <span class="img-preview-placeholder">Select a photo to preview</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-accent mt-4" style="font-size:1.05rem;padding:1rem 3rem;">+ Add Item to
+            Menu</button>
+        </form>
+      </div>
+
+      <!-- Existing items -->
+      <div
+        style="font-size:.85rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-faint);margin-bottom:1rem;margin-top:2rem;">
+        Existing Items</div>
+      <div id="menuManageList">
+        <div class="empty-state">
+          <div class="icon">🍽️</div>
+          <h3>Loading…</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ADMIN TEAM TAB ── -->
+    <div class="tab-content" id="tab-team">
+      <div class="section-head">
+        <h3>Admin Management</h3>
+      </div>
+
+      <div class="menu-form-wrap" style="max-width:600px">
+        <div
+          style="font-size:.85rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:1.5rem">
+          Create New Administrator</div>
+        <form id="createAdminForm" onsubmit="handleCreateAdmin(event)">
+          <div style="display:flex; flex-direction:column; gap:1.25rem;">
+            <div class="input-group">
+              <label>Admin Name</label>
+              <input id="newAdminName" type="text" class="input" placeholder="e.g. Alex Smith" required />
+            </div>
+            <div class="input-group">
+              <label>Admin Email</label>
+              <input id="newAdminEmail" type="email" class="input" placeholder="admin2@canteen.com" required />
+            </div>
+            <div class="input-group">
+              <label>Initial Password</label>
+              <input id="newAdminPassword" type="password" class="input" placeholder="Min. 6 characters" minlength="6"
+                required />
+            </div>
+            <div id="adminCreateMsg" class="error-msg hidden"></div>
+            <button type="submit" class="btn btn-accent mt-2" style="font-size:1rem; padding:0.9rem;">+ Create Admin
+              Account</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div><!-- /shell -->
+
+  <!-- Account Settings Modal -->
+  <div id="accountModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1.5rem; font-weight: 800;">Admin Settings</h3>
+        <button onclick="closeAccountSettings()"
+          style="background:transparent; border:none; font-size:1.8rem; cursor:pointer; color:var(--ink-dim); line-height:1;">&times;</button>
+      </div>
+      <form id="accountForm" onsubmit="handleAccountUpdate(event)">
+        <div class="input-group">
+          <label>Name</label>
+          <input type="text" id="accName" class="input" required />
+        </div>
+        <div class="input-group" style="margin-top: 1rem;">
+          <label>New Password (leave blank to keep current)</label>
+          <input type="password" id="accPassword" class="input" placeholder="Min 6 characters" minlength="6" />
+        </div>
+        <button type="submit" class="btn btn-accent btn-full mt-4"
+          style="margin-top: 2rem; font-size: 1.05rem; padding: 1rem;">Save Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const user = requireAuth('admin');
+    if (user) document.getElementById('adminName').textContent = user.name;
+
+    /* ── ACCOUNT SETTINGS ── */
+    const openAccountSettings = () => {
+      const modal = document.getElementById('accountModal');
+      document.getElementById('accName').value = user.name;
+      document.getElementById('accPassword').value = '';
+      modal.classList.remove('hidden');
+    };
+
+    const closeAccountSettings = () => {
+      document.getElementById('accountModal').classList.add('hidden');
+    };
+
+    const handleAccountUpdate = async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('accName').value.trim();
+      const password = document.getElementById('accPassword').value.trim();
+
+      try {
+        const body = { name };
+        if (password) body.password = password;
+
+        const res = await api.put('/auth/me', body);
+
+        user.name = res.user.name;
+        localStorage.setItem('cq_user', JSON.stringify(res.user));
+        document.getElementById('adminName').textContent = user.name;
+
+        toast('Profile updated successfully!', 'success');
+        closeAccountSettings();
+
+        if (password) {
+          toast('Password changed. Please log in again.', 'warning');
+          setTimeout(() => logout(), 1500);
+        }
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    };
+
+    /* ── CREATE ADMIN ── */
+    const handleCreateAdmin = async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('newAdminName').value.trim();
+      const email = document.getElementById('newAdminEmail').value.trim();
+      const password = document.getElementById('newAdminPassword').value.trim();
+      const msg = document.getElementById('adminCreateMsg');
+      msg.classList.add('hidden');
+
+      try {
+        const res = await api.post('/auth/admin/create-admin', { name, email, password });
+        toast(res.message || 'Admin created successfully!', 'success');
+        e.target.reset();
+      } catch (err) {
+        msg.textContent = err.message;
+        msg.classList.remove('hidden');
+        toast(err.message, 'error');
+      }
+    };
+
+    /* ── TAB SWITCHING ── */
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+
+        // Load data based on tab
+        if (btn.dataset.tab === 'orders') loadOrders();
+        if (btn.dataset.tab === 'kitchen') loadKitchenBatch();
+        if (btn.dataset.tab === 'completed') loadCompletedOrders();
+        if (btn.dataset.tab === 'availability') loadAvailability();
+        if (btn.dataset.tab === 'menu') loadMenuManage();
+      });
+    });
+
+    /* ── KITCHEN BATCHING ── */
+    const loadKitchenBatch = async (isManual = false) => {
+      try {
+        const res = await api.get('/order/all');
+        const orders = res.data;
+        const activeOrders = orders.filter(o => ['In Queue', 'Ordered', 'Preparing'].includes(o.order_status));
+        
+        const batchMap = {};
+        
+        activeOrders.forEach(o => {
+          (o.items || []).forEach(item => {
+            const key = item.item_name;
+            if (!batchMap[key]) {
+              batchMap[key] = {
+                name: item.item_name,
+                totalQty: 0,
+                inQueueQty: 0,
+                prepQty: 0,
+                orderTokens: []
+              };
+            }
+            batchMap[key].totalQty += item.quantity;
+            if (o.order_status === 'Preparing') {
+              batchMap[key].prepQty += item.quantity;
+            } else {
+              batchMap[key].inQueueQty += item.quantity;
+            }
+            batchMap[key].orderTokens.push({ token: o.token_number, status: o.order_status, qty: item.quantity, orderId: o._id });
+          });
+        });
+
+        const items = Object.values(batchMap).sort((a, b) => b.totalQty - a.totalQty);
+        const container = document.getElementById('kitchenBatchContainer');
+
+        if (!items.length) {
+          container.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1;">
+              <div class="icon">✨</div>
+              <h3>Kitchen is all caught up!</h3>
+              <p>No active items waiting to be cooked right now.</p>
+            </div>`;
+          return;
+        }
+
+        container.innerHTML = items.map(item => `
+          <div class="card" style="border: 1px solid var(--border-light); border-radius:var(--radius-lg); position:relative; overflow:hidden;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:.75rem;">
+              <div>
+                <h4 style="font-size:1.15rem; font-weight:800; color:var(--ink);">${item.name}</h4>
+                <div style="font-size:.8rem; color:var(--ink-faint); margin-top:.2rem;">
+                  Needed across ${item.orderTokens.length} ticket${item.orderTokens.length === 1 ? '' : 's'}
+                </div>
+              </div>
+              <div style="font-size:1.6rem; font-weight:900; color:var(--accent); background:var(--accent-soft); padding:.2rem .75rem; border-radius:var(--radius-sm); line-height:1.2;">
+                x${item.totalQty}
+              </div>
+            </div>
+
+            <div style="display:flex; gap:.5rem; margin-bottom:.9rem;">
+              <div style="flex:1; background:var(--surface-bg); padding:.6rem; border-radius:var(--radius-sm); text-align:center; border:1px solid var(--border-light);">
+                <div style="font-size:.7rem; font-weight:700; color:var(--ink-faint); text-transform:uppercase;">To Cook (Queue)</div>
+                <div style="font-size:1.15rem; font-weight:800; color:var(--primary);">${item.inQueueQty}</div>
+              </div>
+              <div style="flex:1; background:var(--surface-bg); padding:.6rem; border-radius:var(--radius-sm); text-align:center; border:1px solid var(--border-light);">
+                <div style="font-size:.7rem; font-weight:700; color:var(--ink-faint); text-transform:uppercase;">Cooking Now</div>
+                <div style="font-size:1.15rem; font-weight:800; color:var(--warning);">${item.prepQty}</div>
+              </div>
+            </div>
+
+            <div style="font-size:.76rem; font-weight:700; color:var(--ink-faint); margin-bottom:.35rem;">Tickets Waiting:</div>
+            <div style="display:flex; flex-wrap:wrap; gap:.35rem;">
+              ${item.orderTokens.map(t => `
+                <span class="badge ${t.status === 'Preparing' ? 'badge-warning' : 'badge-primary'}" style="font-size:.75rem;">
+                  #${t.token} (x${t.qty})
+                </span>
+              `).join('')}
+            </div>
+          </div>
+        `).join('');
+
+        if (isManual) toast('Kitchen batches refreshed!', 'success');
+      } catch (err) {
+        toast('Failed to load kitchen batches.', 'error');
+      }
+    };
+
+    /* ── BADGE CLASS MAP ── */
+    const statusBadge = s => ({
+      'Ordered': 'badge-neutral',
+      'OTP Verified': 'badge-primary',
+      'In Queue': 'badge-primary',
+      'Preparing': 'badge-warning',
+      'Ready for Pickup': 'badge-ready',
+      'Delivered': 'badge-success',
+      'Cancelled': 'badge-danger',
+    }[s] || 'badge-neutral');
+
+    /* ── ORDERS ── */
+    const loadOrders = async (isManual = false) => {
+      try {
+        const res = await api.get('/order/all');
+        const orders = res.data;
+        document.getElementById('statTotal').textContent = orders.length;
+        document.getElementById('statQueue').textContent = orders.filter(o => o.order_status === 'In Queue').length;
+        document.getElementById('statPrep').textContent = orders.filter(o => o.order_status === 'Preparing').length;
+        document.getElementById('statDone').textContent = orders.filter(o => o.order_status === 'Delivered').length;
+
+        if (!orders.length) {
+          document.getElementById('ordersList').innerHTML =
+            '<div class="empty-state"><div class="icon">✅</div><h3>No active orders</h3><p>All caught up! Time for a coffee.</p></div>';
+          return;
+        }
+
+        document.getElementById('ordersList').innerHTML = orders.map(o => {
+          const isOrdered = o.order_status === 'Ordered';
+          const isInQueue = o.order_status === 'In Queue' || isOrdered;
+          const isPreparing = o.order_status === 'Preparing';
+          const isReady = o.order_status === 'Ready for Pickup';
+
+          let nextActionBtn = '';
+          if (isInQueue) {
+            nextActionBtn = `<button class="btn btn-warning btn-sm btn-quick" onclick="advanceStatus('${o._id}', 'Preparing')">🍳 Start Preparing</button>`;
+          } else if (isPreparing) {
+            nextActionBtn = `
+              <button class="btn btn-primary btn-sm btn-quick" onclick="advanceStatus('${o._id}', 'Ready for Pickup')">🔔 Food Ready</button>
+              <div class="inline-otp">
+                <input type="text" maxlength="4" placeholder="OTP" id="otp-${o._id}" onkeypress="if(event.key==='Enter') verifyOTPInline('${o._id}')">
+                <button class="btn btn-success btn-sm" onclick="verifyOTPInline('${o._id}')">Verify & Deliver</button>
+              </div>`;
+          } else if (isReady) {
+            nextActionBtn = `
+              <div class="inline-otp" style="border: 2px solid var(--success);">
+                <input type="text" maxlength="4" placeholder="OTP" id="otp-${o._id}" onkeypress="if(event.key==='Enter') verifyOTPInline('${o._id}')">
+                <button class="btn btn-success btn-sm" onclick="verifyOTPInline('${o._id}')">✅ Verify & Deliver</button>
+              </div>`;
+          }
+
+          return `
+          <div class="order-card" data-status="${o.order_status}" id="order-${o._id}">
+            <div class="order-header">
+              <div style="display:flex; align-items:center;">
+                <div>
+                  <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+                    <span class="order-token">#${o.token_number}</span>
+                    <span class="badge ${statusBadge(o.order_status)}" style="font-size:.8rem">${o.order_status}</span>
+                    ${isReady ? `<span class="badge badge-warning animate-pulse" style="font-size:.8rem">Awaiting OTP</span>` : ''}
+                  </div>
+                  <div class="order-meta">Customer: <strong>${o.user_id?.name || 'Customer'}</strong> &nbsp;·&nbsp; ₹${o.total_price} &nbsp;·&nbsp; ${new Date(o.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+              </div>
+              <div class="order-actions">
+                ${nextActionBtn}
+                <div style="width:1px; height:24px; background:var(--border-light); margin:0 .5rem"></div>
+                <select class="status-select" style="padding:.4rem .8rem; padding-right:2rem; font-size:.8rem" onchange="updateStatus('${o._id}', this.value)">
+                  ${['In Queue', 'Preparing', 'Ready for Pickup', 'Delivered', 'Cancelled']
+              .map(s => `<option ${o.order_status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <div class="order-items">${o.items.map(i => `<span>${i.item_name} × ${i.quantity}</span>`).join('')}</div>
+          </div>`;
+        }).join('');
+      } catch (err) {
+        console.error('Refresh failed:', err);
+        if (isManual) toast('Failed to load orders: ' + err.message, 'error');
+      }
+    };
+
+    /* ── QUICK ACTIONS ── */
+    const verifyOTPInline = async (orderId) => {
+      const otp = document.getElementById(`otp-${orderId}`).value.trim();
+      if (!otp) return toast('Please enter OTP', 'warning');
+      try {
+        await api.post('/order/verify-otp', { order_id: orderId, otp });
+        toast('OTP Verified & Order Delivered!', 'success');
+        loadOrders();
+      } catch (err) { toast(err.message, 'error'); }
+    };
+
+    const advanceStatus = async (orderId, status) => {
+      const card = document.getElementById(`order-${orderId}`);
+      if (card) {
+        card.style.transform = 'translateX(20px)';
+        card.style.opacity = '0';
+      }
+      setTimeout(async () => {
+        await updateStatus(orderId, status);
+      }, 300);
+    };
+
+    const updateStatus = async (orderId, status) => {
+      try {
+        await api.put(`/order/status/${orderId}`, { status });
+        toast(`Status updated to "${status}"`, 'success');
+
+        // Refresh whichever tab is active
+        const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+        if (activeTab === 'completed') {
+          loadCompletedOrders();
+          loadOrders();
+        } else {
+          loadOrders();
+        }
+      } catch (err) { toast(err.message, 'error'); }
+    };
+
+    /* ── COMPLETED ORDERS ── */
+    const loadCompletedOrders = async (isManual = false) => {
+      try {
+        const res = await api.get('/order/completed');
+        const orders = res.data;
+
+        if (!orders.length) {
+          document.getElementById('completedOrdersList').innerHTML =
+            '<div class="empty-state"><div class="icon">✅</div><h3>No completed orders yet</h3><p>Orders marked as Delivered or Cancelled today will appear here.</p></div>';
+          return;
+        }
+
+        document.getElementById('completedOrdersList').innerHTML = orders.map(o => `
+          <div class="order-card" data-status="${o.order_status}" style="opacity: 0.85;">
+            <div class="order-header">
+              <div>
+                <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+                  <span class="order-token">#${o.token_number}</span>
+                  <span class="badge ${statusBadge(o.order_status)}" style="font-size:.8rem">${o.order_status}</span>
+                </div>
+                <div class="order-meta">Customer: <strong>${o.user_id?.name || 'Customer'}</strong> &nbsp;·&nbsp; ₹${o.total_price} &nbsp;·&nbsp; ${new Date(o.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+              </div>
+              <div class="order-actions">
+                <select class="status-select" onchange="updateStatus('${o._id}', this.value)">
+                  ${['In Queue', 'Preparing', 'Ready for Pickup', 'Delivered', 'Cancelled']
+            .map(s => `<option ${o.order_status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <div class="order-items">${o.items.map(i => `<span>${i.item_name} × ${i.quantity}</span>`).join('')}</div>
+          </div>`).join('');
+      } catch (err) {
+        console.error('Refresh failed:', err);
+        if (isManual) toast('Failed to load completed orders.', 'error');
+      }
+    };
+
+    /* ── OTP VERIFY ── */
+    const verifyOTPAction = async () => {
+      const orderId = document.getElementById('verifyOrderId').value.trim();
+      const otp = document.getElementById('verifyOtp').value.trim();
+      const resDiv = document.getElementById('otpResult');
+      if (!orderId || !otp) { toast('Enter Token Number and 4-Digit OTP.', 'error'); return; }
+      try {
+        const res = await api.post('/order/verify-otp', { order_id: orderId, otp });
+        resDiv.innerHTML = `
+          <div style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.35);border-radius:var(--radius-full);padding:.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between;color:#15803d;font-weight:800;font-size:.95rem;box-shadow:0 4px 15px rgba(34,197,94,0.15);animation:fadeInUp .3s ease;">
+            <div style="display:flex;align-items:center;gap:.6rem;">
+              <span>🎉</span>
+              <span>Token <strong>#${res.data.token_number}</strong> verified & delivered!</span>
+            </div>
+            <span style="font-size:.8rem;font-weight:700;color:#16a34a;background:rgba(34,197,94,0.2);padding:.2rem .6rem;border-radius:99px;">Line Auto-Shifted ↻</span>
+          </div>`;
+        resDiv.classList.remove('hidden');
+        document.getElementById('verifyOrderId').value = '';
+        document.getElementById('verifyOtp').value = '';
+        toast(`Token #${res.data.token_number} Delivered!`, 'success');
+        loadOrders();
+        setTimeout(() => resDiv.classList.add('hidden'), 4000);
+      } catch (err) {
+        resDiv.innerHTML = `
+          <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:var(--radius-full);padding:.75rem 1.5rem;color:#b91c1c;font-weight:700;font-size:.9rem;text-align:center;animation:fadeInUp .3s ease;">
+            ✗ ${err.message}
+          </div>`;
+        resDiv.classList.remove('hidden');
+        setTimeout(() => resDiv.classList.add('hidden'), 4000);
+      }
+    };
+
+
+    /* ── AVAILABILITY ── */
+    const loadAvailability = async () => {
+      try {
+        const res = await api.get('/menu');
+        document.getElementById('availabilityList').innerHTML = res.data.map(item => `
+          <div class="avail-row">
+            <div style="flex:1; min-width:220px;">
+              <div class="avail-name">${item.item_name}</div>
+              <div class="avail-meta">₹${item.price} &nbsp;·&nbsp; ${item.category}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.75rem;">
+              <input id="stock-${item._id}" type="number" min="0" class="input" value="${item.stock == null ? '' : item.stock}"
+                     placeholder="Unlimited" style="width:100px;" onchange="changeStock('${item._id}', this.value)" />
+              <label class="toggle" title="Toggle availability">
+                <input type="checkbox" ${item.availability ? 'checked' : ''} onchange="toggleAvail('${item._id}',this.checked)"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>`).join('');
+      } catch (err) { toast('Failed to load availability.', 'error'); }
+    };
+
+    const toggleAvail = async (itemId, availability, stock = undefined) => {
+      try {
+        const body = { item_id: itemId, availability };
+        if (stock !== undefined) body.stock = stock;
+        const res = await api.put('/availability/update', body);
+        toast(res.message, availability ? 'success' : 'warning');
+        loadAvailability();
+      } catch (err) { toast(err.message, 'error'); loadAvailability(); }
+    };
+
+    const changeStock = async (itemId, stockValue) => {
+      const parsedStock = stockValue === '' ? null : Number(stockValue);
+      const checkbox = document.querySelector(`#stock-${itemId}`)?.closest('.avail-row')?.querySelector('input[type="checkbox"]');
+      const availability = checkbox ? checkbox.checked : true;
+      toggleAvail(itemId, availability, parsedStock);
+    };
+
+    /* ── MENU MANAGEMENT ── */
+    const loadMenuManage = async () => {
+      try {
+        const res = await api.get('/menu');
+        if (!res.data.length) {
+          document.getElementById('menuManageList').innerHTML =
+            '<div class="empty-state"><div class="icon">🍽️</div><h3>No items yet</h3><p>Add your first menu item above.</p></div>';
+          return;
+        }
+        document.getElementById('menuManageList').innerHTML = res.data.map(item => `
+          <div class="manage-item">
+            <div class="manage-item-info">
+              <div class="manage-item-name">${item.item_name}</div>
+              <div class="manage-item-sub">${item.category} &nbsp;·&nbsp; ₹${item.price} &nbsp;·&nbsp; ${item.availability ? 'Available' : 'Unavailable'} &nbsp;·&nbsp; Stock: ${item.stock == null ? 'Unlimited' : item.stock}</div>
+            </div>
+            <div class="manage-item-actions">
+              <span class="badge ${item.availability ? 'badge-success' : 'badge-danger'}">${item.availability ? 'Live' : 'Off'}</span>
+              <button class="btn btn-danger btn-sm" onclick="deleteItem('${item._id}','${item.item_name}')" style="box-shadow:none;">Delete</button>
+            </div>
+          </div>`).join('');
+      } catch (err) { toast('Failed to load menu.', 'error'); }
+    };
+
+    /* ── IMAGE SOURCE SWITCHER ── */
+    let activeImgTab = 'url';
+    let uploadedBase64 = '';
+
+    function switchImgTab(tab) {
+      activeImgTab = tab;
+      document.getElementById('imgTabUrl').classList.toggle('active', tab === 'url');
+      document.getElementById('imgTabFile').classList.toggle('active', tab === 'file');
+      document.getElementById('imgPanelUrl').classList.toggle('active', tab === 'url');
+      document.getElementById('imgPanelFile').classList.toggle('active', tab === 'file');
+    }
+
+    function previewUrlImage(url) {
+      const wrap = document.getElementById('urlPreviewWrap');
+      if (!url) {
+        wrap.innerHTML = '<span class="img-preview-placeholder">Image preview will appear here</span>';
+        return;
+      }
+      const img = new Image();
+      img.onload = () => { wrap.innerHTML = ''; wrap.appendChild(img); };
+      img.onerror = () => { wrap.innerHTML = '<span class="img-preview-placeholder" style="color:var(--danger)">⚠ Could not load image</span>'; };
+      img.src = url;
+      img.style.cssText = 'max-height:180px;max-width:100%;object-fit:contain;border-radius:8px;';
+    }
+
+    function handleFileUpload(input) {
+      const file = input.files[0];
+      if (!file) return;
+      document.getElementById('mImgFileName').textContent = file.name;
+      const reader = new FileReader();
+      reader.onload = e => {
+        uploadedBase64 = e.target.result;
+        const wrap = document.getElementById('filePreviewWrap');
+        wrap.innerHTML = `<img src="${uploadedBase64}" style="max-height:180px;max-width:100%;object-fit:contain;border-radius:8px;"/>`;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    document.getElementById('menuForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const imageVal = activeImgTab === 'file'
+        ? uploadedBase64
+        : document.getElementById('mImg').value.trim();
+      try {
+        await api.post('/menu', {
+          item_name: document.getElementById('mName').value,
+          price: parseFloat(document.getElementById('mPrice').value),
+          category: document.getElementById('mCategory').value,
+          description: document.getElementById('mDesc').value,
+          image_url: imageVal,
+          prep_time: parseInt(document.getElementById('mPrep').value) || 10,
+          stock: document.getElementById('mStock').value === '' ? null : Number(document.getElementById('mStock').value),
+        });
+        toast('Menu item added!', 'success');
+        e.target.reset();
+        uploadedBase64 = '';
+        document.getElementById('mImgFileName').textContent = '';
+        document.getElementById('filePreviewWrap').innerHTML = '<span class="img-preview-placeholder">Select a photo to preview</span>';
+        document.getElementById('urlPreviewWrap').innerHTML = '<span class="img-preview-placeholder">Image preview will appear here</span>';
+        switchImgTab('url');
+        loadMenuManage();
+      } catch (err) { toast(err.message, 'error'); }
+    });
+
+    const deleteItem = async (id, name) => {
+      if (!confirm(`Delete "${name}"?`)) return;
+      try { await api.delete(`/menu/${id}`); toast(`${name} deleted.`, 'success'); loadMenuManage(); }
+      catch (err) { toast(err.message, 'error'); }
+    };
+
+    /* ── INIT ── */
+    loadOrders();
+    setInterval(loadOrders, 20000);
+  </script>
+</body>
+
+</html>

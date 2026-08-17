@@ -1,8 +1,11 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 const mongoose = require('mongoose');
+const User = require('../models/User');
 const MenuItem = require('../models/MenuItem');
+const Order = require('../models/Order');
+const QueueRecord = require('../models/QueueRecord');
 
-const menuItems = [
+const defaultMenuItems = [
   { item_name: 'Chicken Biryani', description: 'Aromatic basmati rice with spiced chicken', price: 80, category: 'Lunch', availability: true, image_url: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400', prep_time: 15 },
   { item_name: 'Veg Biryani', description: 'Fragrant rice with mixed vegetables', price: 60, category: 'Lunch', availability: true, image_url: 'https://images.unsplash.com/photo-1596797038530-2c107229654b?w=400', prep_time: 12 },
   { item_name: 'Masala Dosa', description: 'Crispy dosa with spiced potato filling', price: 40, category: 'Breakfast', availability: true, image_url: 'https://images.unsplash.com/photo-1630409351241-e90a5d1f1d7a?w=400', prep_time: 8 },
@@ -17,23 +20,57 @@ const menuItems = [
   { item_name: 'Fresh Lime Soda', description: 'Refreshing lime with soda and sugar', price: 20, category: 'Beverages', availability: true, image_url: 'https://images.unsplash.com/photo-1621263764928-df1444c5e859?w=400', prep_time: 2 },
   { item_name: 'Noodles', description: 'Stir-fried hakka noodles with vegetables', price: 45, category: 'Snacks', availability: true, image_url: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400', prep_time: 8 },
   { item_name: 'Chole Bhature', description: 'Spicy chickpea curry with fried bread', price: 50, category: 'Lunch', availability: true, image_url: 'https://images.unsplash.com/photo-1606755456206-b25206cde27e?w=400', prep_time: 10 },
-  { item_name: 'Pasta Arrabiata', description: 'Penne pasta in spicy tomato sauce', price: 55, category: 'Snacks', availability: false, image_url: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400', prep_time: 10 },
+  { item_name: 'Pasta Arrabiata', description: 'Penne pasta in spicy tomato sauce', price: 55, category: 'Snacks', availability: true, image_url: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400', prep_time: 10 },
 ];
 
-const seedMenu = async () => {
+const resetDatabase = async () => {
   try {
     const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/canteenqueue';
+    console.log('🔄 Connecting to MongoDB:', mongoUri);
     await mongoose.connect(mongoUri);
-    console.log('✅ Connected to MongoDB');
+    console.log('✅ Connected to MongoDB successfully\n');
+
+    console.log('🧹 Clearing old data...');
+    await User.deleteMany({});
+    console.log('   ✓ Removed all users (customers, staff, old admins)');
+
+    await Order.deleteMany({});
+    console.log('   ✓ Removed all order history');
+
+    await QueueRecord.deleteMany({});
+    console.log('   ✓ Cleared queue records');
+
     await MenuItem.deleteMany({});
-    console.log('🗑️  Cleared existing menu items');
-    const inserted = await MenuItem.insertMany(menuItems);
-    console.log(`🍽️  Seeded ${inserted.length} menu items successfully!`);
+    console.log('   ✓ Cleared old menu items\n');
+
+    console.log('🌱 Seeding fresh data...');
+    const insertedItems = await MenuItem.insertMany(defaultMenuItems);
+    console.log(`   ✓ Seeded ${insertedItems.length} menu items`);
+
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@canteen.com';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const adminName = process.env.ADMIN_NAME || 'Canteen Administrator';
+
+    const admin = await User.create({
+      name: adminName,
+      email: adminEmail,
+      password: adminPassword,
+      role: 'admin',
+    });
+    console.log(`   ✓ Created fresh primary Admin account: ${admin.email}\n`);
+
+    console.log('====================================================');
+    console.log('✨ DATABASE RESET & FORMAT COMPLETE ✨');
+    console.log('====================================================');
+    console.log(`👑 Admin Email    : ${adminEmail}`);
+    console.log(`🔑 Admin Password : ${adminPassword}`);
+    console.log(`🍽️  Menu Items    : ${insertedItems.length}`);
+    console.log('====================================================');
     process.exit(0);
   } catch (err) {
-    console.error('❌ Seed error:', err.message);
+    console.error('❌ Error resetting database:', err.message);
     process.exit(1);
   }
 };
 
-seedMenu();
+resetDatabase();

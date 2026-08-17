@@ -23,10 +23,15 @@ const userSchema = new mongoose.Schema({
     minlength: 6,
     select: false,
   },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
   role: {
     type: String,
-    enum: ['student', 'staff'],
-    default: 'student',
+    enum: ['customer', 'admin', 'student', 'staff'],
+    default: 'customer',
   },
   resetPasswordToken: String,
   resetPasswordExpire: Date,

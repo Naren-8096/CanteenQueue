@@ -49,4 +49,76 @@ const deleteMenuItem = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getMenu, addMenuItem, updateMenuItem, deleteMenuItem };
+// POST /api/menu/:id/reviews (authenticated customer)
+const addReviewToItem = async (req, res, next) => {
+  try {
+    const { rating, comment } = req.body;
+    const numRating = Number(rating);
+    if (!Number.isInteger(numRating) || numRating < 1 || numRating > 5) {
+      return res.status(400).json({ success: false, message: 'Rating must be an integer between 1 and 5.' });
+    }
+
+    const item = await MenuItem.findById(req.params.id);
+    if (!item) return res.status(404).json({ success: false, message: 'Menu item not found.' });
+
+    // Check if user already reviewed this item
+    const existingIndex = item.reviews.findIndex(r => r.user_id.toString() === req.user._id.toString());
+    const userName = req.user.name || 'Student';
+
+    if (existingIndex !== -1) {
+      item.reviews[existingIndex].rating = numRating;
+      item.reviews[existingIndex].comment = comment || '';
+      item.reviews[existingIndex].user_name = userName;
+      item.reviews[existingIndex].createdAt = new Date();
+    } else {
+      item.reviews.push({
+        user_id: req.user._id,
+        user_name: userName,
+        rating: numRating,
+        comment: comment || '',
+        createdAt: new Date(),
+      });
+    }
+
+    // Recalculate average rating & count
+    item.num_reviews = item.reviews.length;
+    const sum = item.reviews.reduce((acc, r) => acc + r.rating, 0);
+    item.average_rating = Math.round((sum / item.num_reviews) * 10) / 10;
+
+    await item.save();
+
+    res.json({
+      success: true,
+      message: 'Review submitted successfully!',
+      data: {
+        item_id: item._id,
+        item_name: item.item_name,
+        average_rating: item.average_rating,
+        num_reviews: item.num_reviews,
+        reviews: item.reviews,
+      },
+    });
+  } catch (err) { next(err); }
+};
+
+// GET /api/menu/:id/reviews
+const getItemReviews = async (req, res, next) => {
+  try {
+    const item = await MenuItem.findById(req.params.id);
+    if (!item) return res.status(404).json({ success: false, message: 'Menu item not found.' });
+
+    const sortedReviews = (item.reviews || []).slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    res.json({
+      success: true,
+      data: {
+        item_id: item._id,
+        item_name: item.item_name,
+        average_rating: item.average_rating || 0,
+        num_reviews: item.num_reviews || 0,
+        reviews: sortedReviews,
+      },
+    });
+  } catch (err) { next(err); }
+};
+
+module.exports = { getMenu, addMenuItem, updateMenuItem, deleteMenuItem, addReviewToItem, getItemReviews };

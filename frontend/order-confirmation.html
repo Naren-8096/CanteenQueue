@@ -1,45 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Order Confirmed – CanteenQueue</title>
-  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/style.css" />
   <style>
-    .confetti { animation: float 2s ease-in-out infinite; display:block; font-size:3rem; }
-    .status-timeline { display:flex; flex-direction:column; gap:.75rem; }
-    .status-row { display:flex; align-items:center; gap:1rem; padding:.75rem 1rem; border-radius:var(--radius-sm); border:1px solid var(--border); }
-    .status-row.active { border-color:var(--primary); background:rgba(14,165,233,0.05); }
-    .status-row.done { border-color:var(--success); background:rgba(34,197,94,0.05); }
-    .status-row .status-icon { font-size:1.3rem; min-width:30px; }
-    .status-row .status-text { flex:1; }
-    .status-row .status-label { font-weight:800; font-size:.9rem; color:#1a1a2e; }
-    .status-row .status-sub { font-size:.8rem; color:#444; font-weight:500; }
+    .confetti {
+      animation: float 2s ease-in-out infinite;
+      display: block;
+      font-size: 3rem;
+    }
+
+    .status-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: .75rem 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .status-row.active {
+      border-color: var(--primary);
+      background: rgba(14, 165, 233, 0.05);
+    }
+
+    .status-row.done {
+      border-color: var(--success);
+      background: rgba(34, 197, 94, 0.05);
+    }
+
+    .status-row .status-icon {
+      font-size: 1.3rem;
+      min-width: 30px;
+    }
+
+    .status-row .status-text {
+      flex: 1;
+    }
+
+    .status-row .status-label {
+      font-weight: 800;
+      font-size: .9rem;
+      color: #1a1a2e;
+    }
+
+    .status-row .status-sub {
+      font-size: .8rem;
+      color: #444;
+      font-weight: 500;
+    }
+
     /* extra overrides for hero-bg light background */
-    h3 { color: #0f172a; }
-    .card { color: #1e293b; }
-    p { color: #475569; }
+    h3 {
+      color: #0f172a;
+    }
+
+    .card {
+      color: #1e293b;
+    }
+
+    p {
+      color: #475569;
+    }
+
     /* Item queue card */
-    .item-queue-row { display:flex; align-items:center; justify-content:space-between; padding:.7rem 0; border-bottom:1px solid var(--border); gap:.5rem; }
-    .item-queue-row:last-child { border-bottom:none; }
-    .item-queue-name { font-weight:600; font-size:.95rem; color:#1e293b; }
-    .item-queue-qty { font-size:.8rem; color:#64748b; }
-    .item-queue-badge { display:inline-flex; align-items:center; gap:.35rem; padding:.3rem .75rem; border-radius:99px; font-size:.82rem; font-weight:700; white-space:nowrap; }
-    .item-queue-badge.first { background:rgba(34,197,94,.15); color:#15803d; border:1px solid rgba(34,197,94,.3); }
-    .item-queue-badge.waiting { background:rgba(14,165,233,.12); color:#0369a1; border:1px solid rgba(14,165,233,.25); }
-    .item-queue-badge.not-queued { background:rgba(249,115,22,.1); color:#c2410c; border:1px solid rgba(249,115,22,.25); }
+    .item-queue-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .7rem 0;
+      border-bottom: 1px solid var(--border);
+      gap: .5rem;
+    }
+
+    .item-queue-row:last-child {
+      border-bottom: none;
+    }
+
+    .item-queue-name {
+      font-weight: 600;
+      font-size: .95rem;
+      color: #1e293b;
+    }
+
+    .item-queue-qty {
+      font-size: .8rem;
+      color: #64748b;
+    }
+
+    .item-queue-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      padding: .3rem .75rem;
+      border-radius: 99px;
+      font-size: .82rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .item-queue-badge.first {
+      background: rgba(34, 197, 94, .15);
+      color: #15803d;
+      border: 1px solid rgba(34, 197, 94, .3);
+    }
+
+    .item-queue-badge.waiting {
+      background: rgba(14, 165, 233, .12);
+      color: #0369a1;
+      border: 1px solid rgba(14, 165, 233, .25);
+    }
+
+    .item-queue-badge.not-queued {
+      background: rgba(249, 115, 22, .1);
+      color: #c2410c;
+      border: 1px solid rgba(249, 115, 22, .25);
+    }
   </style>
 </head>
+
 <body class="hero-bg">
   <div class="loading-overlay hidden" id="loading-overlay">
-    <div class="loading-box"><div class="spinner"></div><p>Loading…</p></div>
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <p>Loading…</p>
+    </div>
   </div>
 
   <nav class="navbar">
     <a href="/" class="navbar-brand">🍽️ Canteen<span>Queue</span></a>
     <div class="navbar-nav">
       <a href="my-orders.html" class="btn btn-ghost btn-sm" style="font-weight:700">My Orders</a>
-      <a href="student-dashboard.html" class="btn btn-ghost btn-sm">+ New Order</a>
+      <a href="customer-dashboard.html" class="btn btn-ghost btn-sm">+ New Order</a>
       <button onclick="logout()" class="btn btn-outline btn-sm">Logout</button>
     </div>
   </nav>
@@ -48,8 +149,8 @@
     <!-- SUCCESS BANNER -->
     <div class="card text-center mb-3 animate-fade-up" style="padding:2.5rem">
       <span class="confetti">🎉</span>
-      <h2 class="mt-2">Order Confirmed!</h2>
-      <p>Payment successful. Show your OTP at the counter to collect your food.</p>
+      <h2 class="mt-2" id="bannerTitle">Order Confirmed!</h2>
+      <p id="bannerSub">Payment successful. Track your order queue and preparation below.</p>
     </div>
 
     <!-- TOKEN & OTP -->
@@ -59,113 +160,353 @@
         <div class="token-number" id="tokenDisplay">—</div>
         <p style="font-size:.8rem;color:var(--text-muted);margin-top:.5rem">Show at counter</p>
       </div>
-      <div class="token-box animate-fade-up" style="animation-delay:.2s;border-color:rgba(249,115,22,0.3);background:rgba(249,115,22,0.05)">
-        <p style="font-size:.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem">Your OTP</p>
+      <div class="token-box animate-fade-up" id="otpBox" style="animation-delay:.2s;border-color:rgba(249,115,22,0.3);background:rgba(249,115,22,0.05);transition:all 0.3s ease;">
+        <p style="font-size:.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem">Your OTP Code</p>
         <div class="otp-number" id="otpDisplay">—</div>
-        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.5rem">Tell staff at counter</p>
+        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.5rem" id="otpBoxSub">Tell staff at counter when ready</p>
       </div>
     </div>
 
     <!-- ORDER STATUS TRACKER -->
     <div class="card mb-3 animate-fade-up" style="animation-delay:.3s">
-      <h3 class="mb-3">📊 Order Status</h3>
+      <h3 class="mb-3">📊 Live Order Progress</h3>
       <div class="status-timeline" id="statusTimeline">
-        <div class="status-row" id="st-ordered">
+        <div class="status-row done" id="st-ordered">
           <div class="status-icon">🛒</div>
-          <div class="status-text"><div class="status-label">Order Placed</div><div class="status-sub">Payment confirmed</div></div>
-          <span class="badge badge-success">Done</span>
-        </div>
-        <div class="status-row" id="st-otp">
-          <div class="status-icon">✅</div>
-          <div class="status-text"><div class="status-label">OTP Verification</div><div class="status-sub">Show OTP at the counter</div></div>
-          <span id="otpBadge" class="badge badge-warning">Pending</span>
+          <div class="status-text">
+            <div class="status-label">Order Placed</div>
+            <div class="status-sub">Payment confirmed</div>
+          </div>
+          <span class="badge badge-success">✓ Done</span>
         </div>
         <div class="status-row" id="st-queue">
           <div class="status-icon">📋</div>
           <div class="status-text">
-            <div class="status-label">In Queue</div>
-            <div class="status-sub">Queue position: <span id="queuePos">—</span></div>
+            <div class="status-label">1. In Queue</div>
+            <div class="status-sub" id="queueSub">Queue position: <span id="queuePos">—</span></div>
           </div>
           <span id="queueBadge" class="badge badge-primary">Waiting</span>
         </div>
         <div class="status-row" id="st-prep">
           <div class="status-icon">🍳</div>
-          <div class="status-text"><div class="status-label">Preparing</div><div class="status-sub">Your food is being made</div></div>
+          <div class="status-text">
+            <div class="status-label">2. Food Preparation</div>
+            <div class="status-sub" id="prepSub">Your food will be prepared in the kitchen</div>
+          </div>
           <span id="prepBadge" class="badge" style="opacity:.4">—</span>
+        </div>
+        <div class="status-row" id="st-otp">
+          <div class="status-icon">🔑</div>
+          <div class="status-text">
+            <div class="status-label">3. OTP Verification</div>
+            <div class="status-sub" id="otpSub">Show your 4-digit OTP at the counter</div>
+          </div>
+          <span id="otpBadge" class="badge" style="opacity:.4">Pending</span>
         </div>
         <div class="status-row" id="st-done">
           <div class="status-icon">🎉</div>
-          <div class="status-text"><div class="status-label">Delivered</div><div class="status-sub">Enjoy your meal!</div></div>
+          <div class="status-text">
+            <div class="status-label">4. Delivered</div>
+            <div class="status-sub">Enjoy your delicious meal!</div>
+          </div>
           <span id="doneBadge" class="badge" style="opacity:.4">—</span>
         </div>
       </div>
     </div>
 
-    <!-- ITEM QUEUE STATUS -->
+    <!-- ITEM QUEUE & REVIEW CARD -->
     <div class="card mb-3 animate-fade-up" id="itemQueueCard" style="animation-delay:.35s;display:none">
-      <h3 class="mb-1">🍽️ Item Queue Status</h3>
-      <p style="font-size:.82rem;color:#64748b;margin-bottom:1rem">People ahead of you per item in the active queue</p>
+      <h3 class="mb-1">🍽️ Order Items & Reviews</h3>
+      <p style="font-size:.82rem;color:#64748b;margin-bottom:1rem" id="itemQueueDesc">People ahead of you per item in the active queue</p>
       <div id="itemQueueList"></div>
     </div>
 
     <div class="card animate-fade-up" style="animation-delay:.4s">
       <button class="btn btn-primary btn-full" id="refreshBtn" onclick="loadStatus(true)">🔄 Refresh Status</button>
-      <p class="text-center mt-2" style="font-size:.8rem;color:var(--text-muted)">Auto-refreshes every 15 seconds</p>
+      <p class="text-center mt-2" style="font-size:.8rem;color:var(--text-muted)">Auto-refreshes every 5 seconds</p>
+    </div>
+  </div>
+
+  <!-- Item Review Modal -->
+  <div id="reviewModal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 520px; max-height: 90vh; overflow-y: auto;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 1.25rem;">
+        <div>
+          <h3 id="reviewItemTitle" style="font-size: 1.35rem; font-weight: 800; margin-bottom:.2rem;">Food Reviews</h3>
+          <div id="reviewItemRatingHeader" style="font-size:.9rem; font-weight:700; color:#b45309;">⭐ 0.0 (0 reviews)</div>
+        </div>
+        <button onclick="closeItemReviewModal()" style="background:transparent; border:none; font-size:1.8rem; cursor:pointer; color:var(--ink-dim); line-height:1;">&times;</button>
+      </div>
+
+      <!-- Write Review Form -->
+      <div style="background:var(--surface-bg); border:1px solid var(--border); border-radius:var(--radius-md); padding:1.25rem; margin-bottom:1.5rem;">
+        <div style="font-weight:800; font-size:.95rem; margin-bottom:.5rem; color:var(--ink);">Rate & Review This Food Item</div>
+        <form id="itemReviewForm" onsubmit="handleItemReviewSubmit(event)">
+          <input type="hidden" id="reviewItemId" />
+          <div style="margin-bottom:.75rem;">
+            <label style="font-size:.82rem; font-weight:700; color:var(--ink-faint); margin-bottom:.3rem; display:block;">Your Rating</label>
+            <div class="star-rating-select" id="starRatingSelect">
+              <span data-star="1" onclick="setModalStarRating(1)">★</span>
+              <span data-star="2" onclick="setModalStarRating(2)">★</span>
+              <span data-star="3" onclick="setModalStarRating(3)">★</span>
+              <span data-star="4" onclick="setModalStarRating(4)">★</span>
+              <span data-star="5" onclick="setModalStarRating(5)">★</span>
+            </div>
+            <input type="hidden" id="modalRatingValue" value="5" />
+          </div>
+          <div class="input-group" style="margin-bottom:.75rem;">
+            <label style="font-size:.82rem; font-weight:700; color:var(--ink-faint);">Your Feedback</label>
+            <textarea id="modalReviewComment" class="input" rows="2" placeholder="Taste, portion size, hot & fresh? (optional)" style="font-size:.9rem; resize:vertical;"></textarea>
+          </div>
+          <button type="submit" class="btn btn-accent btn-sm btn-full" style="font-weight:700;">Submit Review ⭐</button>
+        </form>
+      </div>
+
+      <!-- Existing Reviews List -->
+      <div>
+        <div style="font-weight:800; font-size:.95rem; margin-bottom:.75rem; color:var(--ink);">Customer Reviews</div>
+        <div id="modalReviewsList">
+          <div class="empty-state" style="padding:1.5rem;"><div class="icon">💬</div><p>Loading reviews…</p></div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
   <script>
-    requireAuth('student');
+    requireAuth('customer');
 
     const urlParams = new URLSearchParams(window.location.search);
     const orderId   = urlParams.get('order');
     const pending   = JSON.parse(localStorage.getItem('cq_pending_order') || 'null');
 
     // Fallback: Display token + OTP from localStorage ONLY IF it matches the current order ID
-    // Otherwise, we wait for the API to provide the correct data
     if (pending && pending.order_id === orderId) {
       document.getElementById('tokenDisplay').textContent = `#${pending.token}`;
       document.getElementById('otpDisplay').textContent = pending.otp;
     }
 
+    let lastOrderStatus = 'In Queue';
 
     const updateStatus = (status, queuePos, otpVerified = false) => {
-      const isInQueue = status === 'In Queue';
+      lastOrderStatus = status;
+      const isInQueue = status === 'In Queue' || status === 'Ordered';
       const isPreparing = status === 'Preparing';
-      const isDelivered = status === 'Delivered';
-      const isOtpPending = !otpVerified;
+      const isReady = status === 'Ready for Pickup';
+      const isDelivered = status === 'Delivered' || otpVerified;
+      const isCancelled = status === 'Cancelled';
 
+      // 1. Order placed is always done
       document.getElementById('st-ordered').classList.add('done');
 
-      document.getElementById('st-otp').classList.toggle('done', otpVerified);
-      document.getElementById('st-otp').classList.toggle('active', status === 'OTP Verified');
-      document.getElementById('otpBadge').textContent = otpVerified ? '✓ Verified' : (status === 'Cancelled' ? 'Cancelled' : 'Pending');
-      document.getElementById('otpBadge').className = `badge ${otpVerified ? 'badge-success' : status === 'Cancelled' ? 'badge-danger' : 'badge-warning'}`;
+      // 2. Queue Step
+      const queueRow = document.getElementById('st-queue');
+      const queueBadge = document.getElementById('queueBadge');
+      const queuePosEl = document.getElementById('queuePos');
+      
+      queuePosEl.textContent = queuePos !== null ? `#${queuePos}` : '—';
+      if (isDelivered || isReady || isPreparing) {
+        queueRow.className = 'status-row done';
+        queueBadge.textContent = '✓ Done';
+        queueBadge.className = 'badge badge-success';
+        queueBadge.style.opacity = '1';
+      } else if (isInQueue) {
+        queueRow.className = 'status-row active';
+        queueBadge.textContent = queuePos !== null ? `#${queuePos} In Line` : 'Waiting';
+        queueBadge.className = 'badge badge-primary';
+        queueBadge.style.opacity = '1';
+      } else {
+        queueRow.className = 'status-row';
+        queueBadge.textContent = '—';
+        queueBadge.style.opacity = '.4';
+      }
 
-      document.getElementById('st-queue').classList.toggle('done', isInQueue || isPreparing || isDelivered);
-      document.getElementById('st-queue').classList.toggle('active', isInQueue);
-      document.getElementById('queuePos').textContent = queuePos !== null ? `#${queuePos}` : '—';
-      document.getElementById('queueBadge').textContent = isDelivered ? '✓ Done' : (queuePos !== null ? `#${queuePos}` : 'Waiting');
-      document.getElementById('queueBadge').className = `badge ${isDelivered ? 'badge-success' : 'badge-primary'}`;
+      // 3. Preparation Step
+      const prepRow = document.getElementById('st-prep');
+      const prepBadge = document.getElementById('prepBadge');
+      const prepSub = document.getElementById('prepSub');
 
-      document.getElementById('st-prep').classList.toggle('done', isDelivered);
-      document.getElementById('st-prep').classList.toggle('active', isPreparing);
-      document.getElementById('prepBadge').textContent = isPreparing ? '🍳 Cooking' : isDelivered ? '✓ Done' : '—';
-      document.getElementById('prepBadge').style.opacity = isPreparing || isDelivered ? '1' : '.4';
-      document.getElementById('prepBadge').className = `badge ${isPreparing ? 'badge-warning' : isDelivered ? 'badge-success' : ''}`;
+      if (isDelivered || isReady) {
+        prepRow.className = 'status-row done';
+        prepBadge.textContent = '✓ Prepared';
+        prepBadge.className = 'badge badge-success';
+        prepBadge.style.opacity = '1';
+        prepSub.textContent = 'Food has been prepared by the kitchen';
+      } else if (isPreparing) {
+        prepRow.className = 'status-row active';
+        prepBadge.textContent = '🍳 Cooking';
+        prepBadge.className = 'badge badge-warning';
+        prepBadge.style.opacity = '1';
+        prepSub.textContent = 'Chef is preparing your food right now';
+      } else {
+        prepRow.className = 'status-row';
+        prepBadge.textContent = 'Waiting';
+        prepBadge.className = 'badge badge-neutral';
+        prepBadge.style.opacity = '.4';
+        prepSub.textContent = 'Waiting for queue turn';
+      }
 
-      document.getElementById('st-done').classList.toggle('done', isDelivered);
-      document.getElementById('doneBadge').textContent = isDelivered ? '🎉 Delivered!' : '—';
-      document.getElementById('doneBadge').style.opacity = isDelivered ? '1' : '.4';
-      document.getElementById('doneBadge').className = `badge ${isDelivered ? 'badge-success' : ''}`;
+      // 4. OTP Verification Step
+      const otpRow = document.getElementById('st-otp');
+      const otpBadge = document.getElementById('otpBadge');
+      const otpSub = document.getElementById('otpSub');
+      const otpBox = document.getElementById('otpBox');
+      const otpBoxSub = document.getElementById('otpBoxSub');
 
-      if (status === 'Cancelled') {
-        document.getElementById('st-ordered').classList.add('done');
-        document.getElementById('otpBadge').textContent = 'Cancelled';
-        document.getElementById('otpBadge').className = 'badge badge-danger';
+      if (isDelivered) {
+        otpRow.className = 'status-row done';
+        otpBadge.textContent = '✓ Verified';
+        otpBadge.className = 'badge badge-success';
+        otpBadge.style.opacity = '1';
+        otpSub.textContent = 'OTP verified at counter';
+        otpBox.style.borderColor = 'rgba(34,197,94,0.4)';
+        otpBox.style.background = 'rgba(34,197,94,0.06)';
+        otpBoxSub.textContent = '✓ Verified by counter staff';
+      } else if (isReady) {
+        otpRow.className = 'status-row active';
+        otpBadge.textContent = '🔔 Show OTP';
+        otpBadge.className = 'badge badge-ready';
+        otpBadge.style.opacity = '1';
+        otpSub.textContent = 'Food is ready! Show OTP at the counter to collect';
+        otpBox.style.borderColor = 'rgba(147,51,234,0.6)';
+        otpBox.style.background = 'rgba(147,51,234,0.1)';
+        otpBox.style.boxShadow = '0 0 20px rgba(147,51,234,0.2)';
+        otpBoxSub.textContent = '👉 Show this code to staff now!';
+      } else if (isPreparing) {
+        otpRow.className = 'status-row';
+        otpBadge.textContent = 'Get Ready';
+        otpBadge.className = 'badge badge-warning';
+        otpBadge.style.opacity = '1';
+        otpSub.textContent = 'Keep your OTP ready for pickup';
+        otpBox.style.boxShadow = 'none';
+        otpBoxSub.textContent = 'Keep ready for counter pickup';
+      } else {
+        otpRow.className = 'status-row';
+        otpBadge.textContent = 'Pending';
+        otpBadge.className = 'badge badge-neutral';
+        otpBadge.style.opacity = '.4';
+        otpSub.textContent = 'Show OTP at counter once food is ready';
+        otpBox.style.boxShadow = 'none';
+        otpBoxSub.textContent = 'Tell staff at counter when ready';
+      }
+
+      // 5. Delivered Step
+      const doneRow = document.getElementById('st-done');
+      const doneBadge = document.getElementById('doneBadge');
+
+      if (isDelivered) {
+        doneRow.className = 'status-row done';
+        doneBadge.textContent = '🎉 Delivered!';
+        doneBadge.className = 'badge badge-success';
+        doneBadge.style.opacity = '1';
+        document.getElementById('bannerTitle').textContent = 'Order Delivered! 🎉';
+        document.getElementById('bannerSub').textContent = 'Your order has been collected. Rate your food items below!';
+      } else {
+        doneRow.className = 'status-row';
+        doneBadge.textContent = '—';
+        doneBadge.style.opacity = '.4';
+        if (isReady) {
+          document.getElementById('bannerTitle').textContent = 'Food Ready for Pickup! 🍽️';
+          document.getElementById('bannerSub').textContent = 'Your food is ready at the counter! Show your OTP to collect.';
+        } else if (isPreparing) {
+          document.getElementById('bannerTitle').textContent = 'Food Being Prepared 🍳';
+          document.getElementById('bannerSub').textContent = 'Our kitchen is cooking your delicious meal.';
+        } else {
+          document.getElementById('bannerTitle').textContent = 'Order Confirmed in Queue 📋';
+          document.getElementById('bannerSub').textContent = 'Payment successful. You are in line!';
+        }
+      }
+
+      if (isCancelled) {
+        document.getElementById('bannerTitle').textContent = 'Order Cancelled';
+        document.getElementById('bannerSub').textContent = 'This order was cancelled.';
+        otpBadge.textContent = 'Cancelled';
+        otpBadge.className = 'badge badge-danger';
         toast('This order has been cancelled.', 'warning');
+      }
+    };
+
+    /* ── REVIEW MODAL HANDLERS ── */
+    let currentModalStar = 5;
+
+    const setModalStarRating = (star) => {
+      currentModalStar = star;
+      document.getElementById('modalRatingValue').value = star;
+      document.querySelectorAll('#starRatingSelect span').forEach(el => {
+        const s = Number(el.dataset.star);
+        el.classList.toggle('selected', s <= star);
+      });
+    };
+
+    const openItemReviewModal = async (itemId, itemName = 'Food Item') => {
+      document.getElementById('reviewItemId').value = itemId;
+      document.getElementById('modalReviewComment').value = '';
+      document.getElementById('reviewItemTitle').textContent = `${itemName} Reviews`;
+      setModalStarRating(5);
+
+      document.getElementById('reviewModal').classList.remove('hidden');
+      document.getElementById('modalReviewsList').innerHTML = '<div class="empty-state" style="padding:1.5rem;"><p>Loading reviews…</p></div>';
+
+      try {
+        const res = await api.get(`/menu/${itemId}/reviews`);
+        renderModalReviewsList(res.data);
+      } catch (err) {
+        document.getElementById('modalReviewsList').innerHTML = `<p style="color:var(--danger);font-size:.9rem;padding:1rem;">Failed to load reviews.</p>`;
+      }
+    };
+
+    const closeItemReviewModal = () => {
+      document.getElementById('reviewModal').classList.add('hidden');
+    };
+
+    const renderModalReviewsList = (data) => {
+      const listEl = document.getElementById('modalReviewsList');
+      const reviews = data.reviews || [];
+
+      if (data.average_rating !== undefined) {
+        const avg = data.average_rating > 0 ? data.average_rating.toFixed(1) : 'New';
+        const count = data.num_reviews || 0;
+        document.getElementById('reviewItemRatingHeader').textContent = `⭐ ${avg} (${count} review${count === 1 ? '' : 's'})`;
+      }
+
+      if (!reviews.length) {
+        listEl.innerHTML = `
+          <div class="empty-state" style="padding:2rem 1rem; text-align:center;">
+            <div class="icon" style="font-size:2rem; opacity:.6; margin-bottom:.5rem;">💬</div>
+            <p style="font-size:.9rem; color:var(--ink-faint);">No reviews yet for this item. Be the first to share your thoughts!</p>
+          </div>`;
+        return;
+      }
+
+      listEl.innerHTML = reviews.map(r => {
+        const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+        const dateStr = new Date(r.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        return `
+          <div class="review-item-card" style="border-bottom:1px solid var(--border); padding-bottom:.75rem; margin-bottom:.75rem;">
+            <div class="review-item-header" style="display:flex; justify-content:space-between; margin-bottom:.2rem;">
+              <span class="review-author" style="font-weight:700; font-size:.85rem;">👤 ${r.user_name || 'Student'}</span>
+              <span class="review-stars" style="color:#f59e0b; font-size:.8rem;">${stars}</span>
+            </div>
+            ${r.comment ? `<div class="review-comment" style="font-size:.9rem; color:var(--ink);">"${r.comment}"</div>` : ''}
+            <div class="review-date" style="font-size:.75rem; color:var(--ink-faint); margin-top:.2rem;">${dateStr}</div>
+          </div>`;
+      }).join('');
+    };
+
+    const handleItemReviewSubmit = async (e) => {
+      e.preventDefault();
+      const itemId = document.getElementById('reviewItemId').value;
+      const rating = Number(document.getElementById('modalRatingValue').value);
+      const comment = document.getElementById('modalReviewComment').value.trim();
+
+      try {
+        const res = await api.post(`/menu/${itemId}/reviews`, { rating, comment });
+        toast('Thank you! Review submitted.', 'success');
+        renderModalReviewsList(res.data);
+        document.getElementById('modalReviewComment').value = '';
+      } catch (err) {
+        toast(err.message, 'error');
       }
     };
 
@@ -174,7 +515,6 @@
       try {
         const res = await api.get(`/order/status/${orderId}`);
         const d = res.data;
-        console.log(`Order ${orderId} Status:`, d.order_status);
         
         // Always update Token and OTP from the live API data
         document.getElementById('tokenDisplay').textContent = `#${d.token_number}`;
@@ -184,7 +524,7 @@
 
         updateStatus(d.order_status, d.queue_position, d.otp_verified);
 
-        // Load per-item queue positions
+        // Load per-item queue positions & review buttons
         try {
           const qRes = await api.get(`/queue/item-positions/${orderId}`);
           renderItemQueue(qRes.data);
@@ -198,11 +538,13 @@
     const renderItemQueue = (data) => {
       const card = document.getElementById('itemQueueCard');
       const list = document.getElementById('itemQueueList');
-      if (!data.in_queue) {
+      if (!data.items || !data.items.length) {
         card.style.display = 'none';
         return;
       }
       card.style.display = 'block';
+      const isDelivered = lastOrderStatus === 'Delivered';
+
       list.innerHTML = data.items.map(item => {
         const ahead = item.people_ahead;
         let badgeClass, badgeText;
@@ -219,14 +561,17 @@
               <div class="item-queue-name">${item.item_name}</div>
               <div class="item-queue-qty">Qty: ${item.quantity} &nbsp;•&nbsp; ₹${item.price * item.quantity}</div>
             </div>
-            <span class="item-queue-badge ${badgeClass}">${badgeText}</span>
+            <div style="display:flex; align-items:center; gap:.5rem;">
+              ${!isDelivered && data.in_queue ? `<span class="item-queue-badge ${badgeClass}">${badgeText}</span>` : ''}
+              <button class="btn-review" style="padding:.25rem .65rem; font-size:.78rem;" onclick="openItemReviewModal('${item.item_id}', '${item.item_name}')">⭐ Review</button>
+            </div>
           </div>`;
       }).join('');
     };
 
     if (orderId) {
       loadStatus();
-      setInterval(loadStatus, 5000); // Poll every 5 seconds for "live" updates
+      setInterval(loadStatus, 5000); // Poll every 5 seconds for live updates
     }
   </script>
 </body>

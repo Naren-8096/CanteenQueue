@@ -7,30 +7,43 @@ const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, {
   expiresIn: process.env.JWT_EXPIRES_IN || '7d',
 });
 
-// POST /api/auth/register
+// POST /api/auth/register (Customer Registration)
 const register = async (req, res, next) => {
   try {
-    const { name, email, password, role, staffSecret } = req.body;
+    const { name, email, password } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: 'Name, email and password are required.' });
-    }
-
-    if (role === 'staff') {
-      const expectedSecret = (process.env.STAFF_SECRET || '').replace(/^["']|["']$/g, '').trim();
-      if (!staffSecret || staffSecret.trim() !== expectedSecret) {
-        return res.status(403).json({ success: false, message: 'Invalid Staff Access Key. Please contact administration.' });
-      }
     }
 
     const existing = await User.findOne({ email });
     if (existing) return res.status(409).json({ success: false, message: 'Email already registered.' });
 
-    const user = await User.create({ name, email, password, role: role || 'student' });
+    // Public registration always assigns customer role
+    const user = await User.create({ name, email, password, role: 'customer' });
     const token = generateToken(user._id);
     res.status(201).json({
       success: true,
       message: 'Registration successful',
       token,
+      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+    });
+  } catch (err) { next(err); }
+};
+
+// POST /api/auth/admin/create-admin (Admin only)
+const createAdmin = async (req, res, next) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, message: 'Name, email and password are required.' });
+    }
+    const existing = await User.findOne({ email });
+    if (existing) return res.status(409).json({ success: false, message: 'Email already registered.' });
+
+    const user = await User.create({ name, email, password, role: 'admin' });
+    res.status(201).json({
+      success: true,
+      message: 'Admin account created successfully',
       user: { id: user._id, name: user.name, email: user.email, role: user.role },
     });
   } catch (err) { next(err); }
@@ -152,4 +165,25 @@ const resetPassword = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { register, login, getMe, updateMe, forgotPassword, resetPassword };
+// GET /api/auth/google/callback (Google OAuth Callback)
+const googleCallback = (req, res) => {
+  if (!req.user) {
+    return res.redirect('/login.html?error=google_auth_failed');
+  }
+  // Generate JWT token for the authenticated user
+  const token = generateToken(req.user._id);
+  const userPayload = encodeURIComponent(JSON.stringify({
+    id: req.user._id,
+    name: req.user.name,
+    email: req.user.email,
+    role: req.user.role,
+  }));
+  
+  // Redirect to dashboard with token based on role
+  const targetDashboard = (req.user.role === 'admin' || req.user.role === 'staff')
+    ? `/admin-dashboard.html?token=${token}&user=${userPayload}`
+    : `/customer-dashboard.html?token=${token}&user=${userPayload}`;
+  res.redirect(targetDashboard);
+};
+
+module.exports = { register, createAdmin, login, getMe, updateMe, forgotPassword, resetPassword, googleCallback };
