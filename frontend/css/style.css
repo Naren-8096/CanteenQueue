@@ -1746,10 +1746,12 @@ body.hero-bg .card {
   cursor: pointer;
   transition: all var(--transition);
 }
+
 .rating-chip:hover {
   background: rgba(245, 158, 11, 0.22);
   transform: translateY(-1px);
 }
+
 .btn-review {
   display: inline-flex;
   align-items: center;
@@ -1764,11 +1766,13 @@ body.hero-bg .card {
   cursor: pointer;
   transition: all var(--transition);
 }
+
 .btn-review:hover {
   border-color: var(--accent);
   color: var(--accent);
   background: var(--accent-soft);
 }
+
 .star-rating-select {
   display: flex;
   gap: .5rem;
@@ -1776,15 +1780,18 @@ body.hero-bg .card {
   cursor: pointer;
   user-select: none;
 }
+
 .star-rating-select span {
   color: #cbd5e1;
   transition: color 0.15s, transform 0.15s;
 }
+
 .star-rating-select span:hover,
 .star-rating-select span.selected {
   color: #f59e0b;
   transform: scale(1.15);
 }
+
 .review-item-card {
   background: var(--surface-bg);
   border: 1px solid var(--border-light);
@@ -1792,26 +1799,31 @@ body.hero-bg .card {
   padding: .85rem 1rem;
   margin-bottom: .75rem;
 }
+
 .review-item-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: .35rem;
 }
+
 .review-author {
   font-weight: 700;
   font-size: .88rem;
   color: var(--ink);
 }
+
 .review-stars {
   color: #f59e0b;
   font-size: .85rem;
 }
+
 .review-comment {
   font-size: .85rem;
   color: var(--ink-dim);
   line-height: 1.4;
 }
+
 .review-date {
   font-size: .72rem;
   color: var(--ink-faint);

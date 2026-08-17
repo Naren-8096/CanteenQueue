@@ -1,126 +1,259 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Canteen Menu – CanteenQueue</title>
-  <meta name="description" content="Browse today's canteen menu, add items to your cart, and place your order."/>
-  <link rel="stylesheet" href="css/style.css"/>
+  <meta name="description" content="Browse today's canteen menu, add items to your cart, and place your order." />
+  <link rel="stylesheet" href="css/style.css" />
   <style>
     /* ── PAGE TOKENS ── */
 
     /* Category Cards (Food App Style) */
-    .cat-tabs { display:flex; gap:1.25rem; margin-bottom:2.5rem; overflow-x:auto; padding-bottom:1rem; -ms-overflow-style: none; scrollbar-width: none; }
-    .cat-tabs::-webkit-scrollbar { display: none; }
+    .cat-tabs {
+      display: flex;
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+      overflow-x: auto;
+      padding-bottom: 1rem;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .cat-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
     .cat-card {
-      display: flex; flex-direction: column; align-items: center; gap: .65rem;
-      background: transparent; border: none; cursor: pointer; min-width: 72px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .65rem;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      min-width: 72px;
       transition: all var(--transition);
     }
+
     .cat-icon-wrap {
-      width: 72px; height: 72px; border-radius: 50%;
-      background: var(--surface); box-shadow: var(--shadow-sm);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 2rem; border: 2px solid transparent;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      border: 2px solid transparent;
       transition: all var(--transition);
     }
+
     .cat-card span {
-      font-family: var(--font); font-size: .9rem; font-weight: 700; color: var(--ink-faint);
-      transition: color var(--transition); white-space: nowrap;
+      font-family: var(--font);
+      font-size: .9rem;
+      font-weight: 700;
+      color: var(--ink-faint);
+      transition: color var(--transition);
+      white-space: nowrap;
     }
-    .cat-card:hover .cat-icon-wrap { transform: translateY(-4px); box-shadow: var(--shadow-md); }
-    .cat-card:hover span { color: var(--ink); }
-    .cat-card.active .cat-icon-wrap { border-color: var(--accent); background: var(--accent-soft); box-shadow: var(--shadow-glow); }
-    .cat-card.active span { color: var(--accent); }
+
+    .cat-card:hover .cat-icon-wrap {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .cat-card:hover span {
+      color: var(--ink);
+    }
+
+    .cat-card.active .cat-icon-wrap {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .cat-card.active span {
+      color: var(--accent);
+    }
 
     /* Queue-demand tag */
     .demand-tag {
-      display:inline-flex; align-items:center; gap:.25rem;
-      font-size:.75rem; font-weight:800;
-      padding:.2rem .6rem;
-      border-radius:var(--radius-full);
-      background:var(--warning-soft);
-      color:var(--warning);
-      margin-top:.4rem;
-      letter-spacing:.02em;
+      display: inline-flex;
+      align-items: center;
+      gap: .25rem;
+      font-size: .75rem;
+      font-weight: 800;
+      padding: .2rem .6rem;
+      border-radius: var(--radius-full);
+      background: var(--warning-soft);
+      color: var(--warning);
+      margin-top: .4rem;
+      letter-spacing: .02em;
     }
 
     /* Image placeholder */
     .img-placeholder {
-      width:100%; height:100%;
-      display:flex; align-items:center; justify-content:center;
-      font-size:3.5rem;
-      background:var(--surface-2);
-      user-select:none;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      background: var(--surface-2);
+      user-select: none;
     }
 
     /* Cart total row */
     .cart-total-row {
-      display:flex; justify-content:space-between; align-items:center;
-      font-weight:800; font-size:1.1rem;
-      padding:1.25rem 0;
-      border-top:2px dashed var(--border);
-      margin-top:.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      padding: 1.25rem 0;
+      border-top: 2px dashed var(--border);
+      margin-top: .75rem;
     }
-    .cart-total-row .total-label { color:var(--ink-faint); font-size:.9rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
-    .cart-total-amount { font-size:1.4rem; color:var(--ink); }
+
+    .cart-total-row .total-label {
+      color: var(--ink-faint);
+      font-size: .9rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .cart-total-amount {
+      font-size: 1.4rem;
+      color: var(--ink);
+    }
 
     /* Empty cart */
-    #cartEmpty { text-align:center; padding:3rem 1rem; color:var(--ink-dim); }
-    #cartEmpty .e-icon { font-size:3rem; margin-bottom:1rem; opacity:.4; filter:grayscale(1); }
-    #cartEmpty p { font-size:.95rem; font-weight:500; }
+    #cartEmpty {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--ink-dim);
+    }
+
+    #cartEmpty .e-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: .4;
+      filter: grayscale(1);
+    }
+
+    #cartEmpty p {
+      font-size: .95rem;
+      font-weight: 500;
+    }
 
     /* Greet chip */
     .greet-chip {
-      display:inline-flex; align-items:center; gap:.5rem;
-      padding:.4rem 1rem;
-      background:var(--surface-bg);
-      border:1px solid var(--border);
-      border-radius:var(--radius-full);
-      font-size:.9rem; font-weight:700;
-      color:var(--ink);
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .4rem 1rem;
+      background: var(--surface-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      font-size: .9rem;
+      font-weight: 700;
+      color: var(--ink);
     }
 
     /* Section label */
     .section-label {
-      font-size:.85rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em;
-      color:var(--ink-faint); margin-bottom:1rem; display:flex; align-items:center; gap:.5rem;
+      font-size: .85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--ink-faint);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
     }
-    .section-label::before { content:''; display:inline-block; width:8px; height:8px; background:var(--accent); border-radius:50%; }
+
+    .section-label::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
 
     /* Sidebar heading */
     .sidebar-heading {
-      display:flex; align-items:center; justify-content:space-between;
-      padding:2rem 2rem 1.5rem;
-      border-bottom:1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 2rem 2rem 1.5rem;
+      border-bottom: 1px solid var(--border-light);
     }
-    .sidebar-heading h3 { font-size:1.25rem; font-weight:800; }
+
+    .sidebar-heading h3 {
+      font-size: 1.25rem;
+      font-weight: 800;
+    }
+
     .cart-count-chip {
-      background:var(--accent); color:#fff;
-      font-size:.8rem; font-weight:800;
-      padding:.2rem .6rem; border-radius:var(--radius-full);
+      background: var(--accent);
+      color: #fff;
+      font-size: .8rem;
+      font-weight: 800;
+      padding: .2rem .6rem;
+      border-radius: var(--radius-full);
     }
 
     /* Modal Overlay */
     .modal-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 9999; opacity: 1; transition: opacity .2s;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 1;
+      transition: opacity .2s;
     }
-    .modal-overlay.hidden { opacity: 0; pointer-events: none; }
+
+    .modal-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
     .modal-content {
-      background: var(--surface); border-radius: var(--radius-lg);
-      padding: 2.5rem; width: 90%; max-width: 500px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.1); transform: scale(1);
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      transform: scale(1);
       transition: transform .2s;
     }
-    .modal-overlay.hidden .modal-content { transform: scale(0.95); }
+
+    .modal-overlay.hidden .modal-content {
+      transform: scale(0.95);
+    }
   </style>
 </head>
+
 <body>
   <div class="loading-overlay hidden" id="loading-overlay">
-    <div class="loading-box"><div class="spinner"></div><p>Loading the fresh menu…</p></div>
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <p>Loading the fresh menu…</p>
+    </div>
   </div>
 
   <!-- NAVBAR -->
@@ -128,9 +261,11 @@
     <a href="/" class="navbar-brand">🍽 Canteen<span>Queue</span></a>
     <div class="navbar-nav" style="display:flex; align-items:center; gap:.5rem;">
       <div class="greet-chip">👋 <span id="userName">Customer</span></div>
-      <a href="display.html" target="_blank" class="btn btn-ghost btn-sm" style="font-weight:700; color:var(--accent);">📺 Live Board</a>
+      <a href="display.html" target="_blank" class="btn btn-ghost btn-sm"
+        style="font-weight:700; color:var(--accent);">📺 Live Board</a>
       <a href="my-orders.html" class="btn btn-ghost btn-sm" style="font-weight:700">My Orders</a>
-      <button onclick="openAccountSettings()" class="btn btn-outline btn-sm" style="border-radius:99px">⚙️ Account</button>
+      <button onclick="openAccountSettings()" class="btn btn-outline btn-sm" style="border-radius:99px">⚙️
+        Account</button>
       <button onclick="logout()" class="btn btn-outline btn-sm" style="border-radius:99px">Logout</button>
     </div>
   </nav>
@@ -141,7 +276,8 @@
     <div class="main-area">
 
       <!-- Page header -->
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:2rem;background:var(--surface);padding:2rem;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);border:1px solid var(--border-light)">
+      <div
+        style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:2rem;background:var(--surface);padding:2rem;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);border:1px solid var(--border-light)">
         <div>
           <h2 style="margin-bottom:.4rem;font-size:2rem">What are we eating today? 😋</h2>
           <p style="font-size:1.05rem;font-weight:500">Pick your favourites and add them to the cart.</p>
@@ -172,7 +308,10 @@
 
       <!-- Menu grid -->
       <div class="grid-3 animate-fade-up" id="menuGrid">
-        <div class="empty-state"><div class="icon">🍽️</div><h3>Loading menu…</h3></div>
+        <div class="empty-state">
+          <div class="icon">🍽️</div>
+          <h3>Loading menu…</h3>
+        </div>
       </div>
     </div>
 
@@ -186,7 +325,7 @@
       <div class="cart-items-wrapper" id="cartItems">
         <div id="cartEmpty">
           <div class="e-icon">🛒</div>
-          <p>Your cart is empty.<br/>Add some tasty items!</p>
+          <p>Your cart is empty.<br />Add some tasty items!</p>
         </div>
       </div>
 
@@ -195,10 +334,12 @@
           <span class="total-label">Subtotal</span>
           <span class="cart-total-amount" id="cartTotal">₹0</span>
         </div>
-        <button class="btn btn-accent btn-full btn-lg mt-2" onclick="proceedToCheckout()" style="font-size:1.15rem;font-weight:800;letter-spacing:0.02em">
+        <button class="btn btn-accent btn-full btn-lg mt-2" onclick="proceedToCheckout()"
+          style="font-size:1.15rem;font-weight:800;letter-spacing:0.02em">
           Checkout Now →
         </button>
-        <button class="btn btn-ghost btn-full mt-2" onclick="clearCart()" style="color:var(--ink-faint);border-radius:99px">
+        <button class="btn btn-ghost btn-full mt-2" onclick="clearCart()"
+          style="color:var(--ink-faint);border-radius:99px">
           Clear Cart
         </button>
       </div>
@@ -210,7 +351,8 @@
     <div class="modal-content">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
         <h3 style="font-size: 1.5rem; font-weight: 800;">Account Settings</h3>
-        <button onclick="closeAccountSettings()" style="background:transparent; border:none; font-size:1.8rem; cursor:pointer; color:var(--ink-dim); line-height:1;">&times;</button>
+        <button onclick="closeAccountSettings()"
+          style="background:transparent; border:none; font-size:1.8rem; cursor:pointer; color:var(--ink-dim); line-height:1;">&times;</button>
       </div>
       <form id="accountForm" onsubmit="handleAccountUpdate(event)">
         <div class="input-group">
@@ -221,7 +363,8 @@
           <label>New Password (leave blank to keep current)</label>
           <input type="password" id="accPassword" class="input" placeholder="Min 6 characters" minlength="6" />
         </div>
-        <button type="submit" class="btn btn-accent btn-full mt-4" style="margin-top: 2rem; font-size: 1.05rem; padding: 1rem;">Save Changes</button>
+        <button type="submit" class="btn btn-accent btn-full mt-4"
+          style="margin-top: 2rem; font-size: 1.05rem; padding: 1rem;">Save Changes</button>
       </form>
     </div>
   </div>
@@ -232,18 +375,24 @@
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 1.25rem;">
         <div>
           <h3 id="reviewItemTitle" style="font-size: 1.35rem; font-weight: 800; margin-bottom:.2rem;">Food Reviews</h3>
-          <div id="reviewItemRatingHeader" style="font-size:.9rem; font-weight:700; color:#b45309;">⭐ 0.0 (0 reviews)</div>
+          <div id="reviewItemRatingHeader" style="font-size:.9rem; font-weight:700; color:#b45309;">⭐ 0.0 (0 reviews)
+          </div>
         </div>
-        <button onclick="closeItemReviewModal()" style="background:transparent; border:none; font-size:1.8rem; cursor:pointer; color:var(--ink-dim); line-height:1;">&times;</button>
+        <button onclick="closeItemReviewModal()"
+          style="background:transparent; border:none; font-size:1.8rem; cursor:pointer; color:var(--ink-dim); line-height:1;">&times;</button>
       </div>
 
       <!-- Write Review Form -->
-      <div style="background:var(--surface-bg); border:1px solid var(--border); border-radius:var(--radius-md); padding:1.25rem; margin-bottom:1.5rem;">
-        <div style="font-weight:800; font-size:.95rem; margin-bottom:.5rem; color:var(--ink);">Rate & Review This Food Item</div>
+      <div
+        style="background:var(--surface-bg); border:1px solid var(--border); border-radius:var(--radius-md); padding:1.25rem; margin-bottom:1.5rem;">
+        <div style="font-weight:800; font-size:.95rem; margin-bottom:.5rem; color:var(--ink);">Rate & Review This Food
+          Item</div>
         <form id="itemReviewForm" onsubmit="handleItemReviewSubmit(event)">
           <input type="hidden" id="reviewItemId" />
           <div style="margin-bottom:.75rem;">
-            <label style="font-size:.82rem; font-weight:700; color:var(--ink-faint); margin-bottom:.3rem; display:block;">Your Rating</label>
+            <label
+              style="font-size:.82rem; font-weight:700; color:var(--ink-faint); margin-bottom:.3rem; display:block;">Your
+              Rating</label>
             <div class="star-rating-select" id="starRatingSelect">
               <span data-star="1" onclick="setModalStarRating(1)">★</span>
               <span data-star="2" onclick="setModalStarRating(2)">★</span>
@@ -255,7 +404,9 @@
           </div>
           <div class="input-group" style="margin-bottom:.75rem;">
             <label style="font-size:.82rem; font-weight:700; color:var(--ink-faint);">Your Feedback</label>
-            <textarea id="modalReviewComment" class="input" rows="2" placeholder="Taste, portion size, hot & fresh? (optional)" style="font-size:.9rem; resize:vertical;"></textarea>
+            <textarea id="modalReviewComment" class="input" rows="2"
+              placeholder="Taste, portion size, hot & fresh? (optional)"
+              style="font-size:.9rem; resize:vertical;"></textarea>
           </div>
           <button type="submit" class="btn btn-accent btn-sm btn-full" style="font-weight:700;">Submit Review ⭐</button>
         </form>
@@ -265,7 +416,10 @@
       <div>
         <div style="font-weight:800; font-size:.95rem; margin-bottom:.75rem; color:var(--ink);">Customer Reviews</div>
         <div id="modalReviewsList">
-          <div class="empty-state" style="padding:1.5rem;"><div class="icon">💬</div><p>Loading reviews…</p></div>
+          <div class="empty-state" style="padding:1.5rem;">
+            <div class="icon">💬</div>
+            <p>Loading reviews…</p>
+          </div>
         </div>
       </div>
     </div>
@@ -288,7 +442,7 @@
       document.getElementById('accPassword').value = '';
       modal.classList.remove('hidden');
     };
-    
+
     const closeAccountSettings = () => {
       document.getElementById('accountModal').classList.add('hidden');
     };
@@ -297,20 +451,20 @@
       e.preventDefault();
       const name = document.getElementById('accName').value.trim();
       const password = document.getElementById('accPassword').value.trim();
-      
+
       try {
         const body = { name };
         if (password) body.password = password;
-        
+
         const res = await api.put('/auth/me', body);
-        
+
         user.name = res.user.name;
         localStorage.setItem('cq_user', JSON.stringify(res.user));
         document.getElementById('userName').textContent = user.name.split(' ')[0];
-        
+
         toast('Profile updated successfully!', 'success');
         closeAccountSettings();
-        
+
         if (password) {
           toast('Password changed. Please log in again.', 'warning');
           setTimeout(() => logout(), 1500);
@@ -405,7 +559,7 @@
       try {
         const res = await api.post(`/menu/${itemId}/reviews`, { rating, comment });
         toast('Thank you! Review submitted.', 'success');
-        
+
         // Update local item data
         const idx = menuItems.findIndex(i => i._id === itemId);
         if (idx !== -1) {
@@ -424,7 +578,7 @@
 
     /* ── RENDER MENU ── */
     const renderMenu = (category = 'All') => {
-      const grid  = document.getElementById('menuGrid');
+      const grid = document.getElementById('menuGrid');
       const items = category === 'All' ? menuItems : menuItems.filter(i => i.category === category);
 
       if (!items.length) {
@@ -432,7 +586,7 @@
         return;
       }
 
-      const catEmoji = { Breakfast:'🥞', Lunch:'🍛', Snacks:'🍿', Beverages:'☕', Dinner:'🍽️' };
+      const catEmoji = { Breakfast: '🥞', Lunch: '🍛', Snacks: '🍿', Beverages: '☕', Dinner: '🍽️' };
 
       grid.innerHTML = items.map(item => {
         const demand = itemQueueCounts[item._id] || 0;
@@ -442,10 +596,10 @@
         const placeholder = catEmoji[item.category] || '🍴';
         const imgHtml = `
           <div class="menu-card-img-wrap">
-            ${item.image_url 
-              ? `<img src="${item.image_url}" alt="${item.item_name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+            ${item.image_url
+            ? `<img src="${item.image_url}" alt="${item.item_name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
                  <div class="img-placeholder" style="display:none">${placeholder}</div>`
-              : `<div class="img-placeholder">${placeholder}</div>`}
+            : `<div class="img-placeholder">${placeholder}</div>`}
           </div>`;
 
         const stockLabel = item.stock == null ? '∞' : item.stock;
@@ -473,8 +627,8 @@
               <div style="display:flex; align-items:center; gap:.4rem;">
                 <button class="btn-review" onclick="event.stopPropagation(); openItemReviewModal('${item._id}')" title="Review this item">⭐ Review</button>
                 ${item.availability
-                  ? `<button class="btn-add" onclick="event.stopPropagation(); addToCart('${item._id}','${item.item_name}',${item.price})">+ Add</button>`
-                  : `<span class="badge badge-neutral">Unavailable</span>`}
+            ? `<button class="btn-add" onclick="event.stopPropagation(); addToCart('${item._id}','${item.item_name}',${item.price})">+ Add</button>`
+            : `<span class="badge badge-neutral">Unavailable</span>`}
               </div>
             </div>
           </div>
@@ -485,9 +639,9 @@
     /* ── RENDER CART ── */
     const renderCart = () => {
       const container = document.getElementById('cartItems');
-      const footer    = document.getElementById('cartFooter');
-      const total     = cart.reduce((a,i) => a + i.price * i.qty, 0);
-      document.getElementById('cartCount').textContent = cart.reduce((a,i) => a + i.qty, 0);
+      const footer = document.getElementById('cartFooter');
+      const total = cart.reduce((a, i) => a + i.price * i.qty, 0);
+      document.getElementById('cartCount').textContent = cart.reduce((a, i) => a + i.qty, 0);
 
       if (!cart.length) {
         container.innerHTML = `<div id="cartEmpty"><div class="e-icon">🛒</div><p>Your cart is empty.<br/>Add some tasty items!</p></div>`;
@@ -568,4 +722,5 @@
     })();
   </script>
 </body>
+
 </html>

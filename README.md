@@ -64,8 +64,7 @@ PAYMENT_MODE=mock
 RAZORPAY_KEY_ID=your_razorpay_key_id_here
 RAZORPAY_KEY_SECRET=your_razorpay_key_secret_here
 
-# Staff Registration Secret
-STAFF_SECRET=your_staff_secret_key_here
+
 
 # Primary Admin Account Configuration (Initial Setup)
 ADMIN_NAME=Canteen Administrator
